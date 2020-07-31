@@ -5,3 +5,7 @@ For the [jQAssistant C# plugin](https://github.com/softvis-research/jqa-csharp-p
 The project is developed under [.NET v5.0.0-preview.6](https://dotnet.microsoft.com/download/dotnet/5.0).
 
 We tested in on Windows 10 and on the Ubuntu subsystem. For the Ubuntu subsystem installation of .NET 5 we followed [this instruction](https://github.com/dotnet/core/blob/master/release-notes/5.0/preview/5.0.0-preview.6-install-instructions.md#install-using-debrpm-packages).
+
+            IParameterSymbol symbol = semanticModel.GetDeclaredSymbol(node);
+            element.Add(new XAttribute("Name", symbol.Name));
+            element.Add(new XAttribute("Type", TypeName(symbol.Type)));
