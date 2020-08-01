@@ -1,9 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Xml.Linq;
 using csharp_to_json_converter.model;
-using CSharpExtractor;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -18,15 +16,13 @@ namespace csharp_to_json_converter.utils
         private List<FileModel> _fileModels;
         private List<FileInfo> _fileInfos;
         private Dictionary<string, SyntaxTree> _syntaxTrees;
-        private CSharpCompilation _cSharpCompilation;
-        private XDocument _xDocument;
+        private Compilation _compilation;
 
         public Analyzer(List<FileInfo> fileInfos)
         {
             _fileModels = new List<FileModel>();
             _fileInfos = fileInfos;
             _syntaxTrees = new Dictionary<string, SyntaxTree>();
-            _xDocument = new XDocument();
         }
 
         private void CreateCompilation()
@@ -40,22 +36,15 @@ namespace csharp_to_json_converter.utils
                 _syntaxTrees.Add(fileInfo.FullName, syntaxTree);
             }
 
-            _cSharpCompilation = CSharpCompilation
+            _compilation = CSharpCompilation
                 .Create("all")
                 .AddSyntaxTrees(_syntaxTrees.Values)
                 .AddReferences(MetadataReference.CreateFromFile(typeof(object).Assembly.Location));
-            
-            XElement compilationElement = new XElement("Compilation",
-                new XAttribute("Version", "0.1"),
-                new XAttribute("Language", "C#"),
-                new XAttribute("Assembly", _cSharpCompilation.AssemblyName));
-
-            _xDocument.Add(compilationElement);
 
             Logger.Info("Finished creating compilation.");
         }
 
-        internal XDocument Analyze()
+        internal RootModel Analyze()
         {
             CreateCompilation();
             
@@ -67,7 +56,10 @@ namespace csharp_to_json_converter.utils
 
             Logger.Info("Finished analyzing scripts.");
 
-            return _xDocument;
+            return new RootModel
+            {
+                FileModels = _fileModels
+            };
         }
 
         private void AnalyzeScript(FileInfo fileInfo)
@@ -84,16 +76,9 @@ namespace csharp_to_json_converter.utils
             FileModel fileModel = new FileModel();
 
             fileModel.AbsolutePath = fileInfo.FullName;
-            
 
-
-            
             SyntaxTree syntaxTree = _syntaxTrees[fileInfo.FullName];
-            
-            var walker = new CSharpConceptWalker(_cSharpCompilation, syntaxTree, _xDocument);
-            walker.Visit(syntaxTree.GetRoot());
-            
-            SemanticModel semanticModel = _cSharpCompilation.GetSemanticModel(syntaxTree);
+            SemanticModel semanticModel = _compilation.GetSemanticModel(syntaxTree);
 
             List<ClassDeclarationSyntax> classDeclarationSyntaxes = syntaxTree
                 .GetRoot()

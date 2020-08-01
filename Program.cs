@@ -1,10 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
-using System.Xml.Linq;
 using csharp_to_json_converter.model;
 using csharp_to_json_converter.utils;
-using Microsoft.CodeAnalysis;
 using NLog;
 
 namespace csharp_to_json_converter
@@ -31,11 +29,12 @@ namespace csharp_to_json_converter
 
             Analyzer analyzer = new Analyzer(fileInfos);
 
-            XDocument xDocument = analyzer.Analyze();
+            RootModel rootModel = analyzer.Analyze();
             
-            Logger.Info("Writing model to XML ...");
-            xDocument.Save("output.xml");
-            Logger.Info("Finished writing model to XML.");
+            Logger.Info("Writing model to JSON ...");
+            string jsonString = JsonSerializer.Serialize(rootModel);
+            File.WriteAllText("output.json", jsonString);
+            Logger.Info("Finished writing model to JSON.");
         }
     }
 }
