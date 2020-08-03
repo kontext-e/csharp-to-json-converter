@@ -7,9 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="3.7.0-3.final" />
-    <PackageReference Include="Microsoft.Net.Compilers" Version="3.7.0-3.final" />
-    <PackageReference Include="NLog" Version="4.7.2" />
+    <PackageReference Include="CommandLineParser" Version="2.9.0-preview1" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="3.7.0-4.final" />
+    <PackageReference Include="Microsoft.Net.Compilers" Version="3.7.0-4.final" />
+    <PackageReference Include="NLog" Version="4.7.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="out" />
   </ItemGroup>
 
 </Project>

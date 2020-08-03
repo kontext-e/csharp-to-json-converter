@@ -44,10 +44,10 @@ namespace csharp_to_json_converter.utils
             Logger.Info("Finished creating compilation.");
         }
 
-        internal RootModel Analyze()
+        internal List<FileModel> Analyze()
         {
             CreateCompilation();
-            
+
             Logger.Info("Analyzing scripts ...");
             foreach (FileInfo fileInfo in _fileInfos)
             {
@@ -56,10 +56,7 @@ namespace csharp_to_json_converter.utils
 
             Logger.Info("Finished analyzing scripts.");
 
-            return new RootModel
-            {
-                FileModels = _fileModels
-            };
+            return _fileModels;
         }
 
         private void AnalyzeScript(FileInfo fileInfo)
@@ -94,11 +91,106 @@ namespace csharp_to_json_converter.utils
                     Fqn = semanticModel.GetDeclaredSymbol(classDeclarationSyntax).ToString()
                 };
 
+                INamedTypeSymbol namedTypeSymbol = semanticModel.GetDeclaredSymbol(classDeclarationSyntax);
+
+                classModel.Abstract = namedTypeSymbol.IsAbstract;
+                classModel.Sealed = namedTypeSymbol.IsSealed;
+
+                ReadMethods(classDeclarationSyntax, classModel, semanticModel);
+                ReadConstructors(classDeclarationSyntax, classModel, semanticModel);
+
                 fileModel.Classes.Add(classModel);
             }
-
-
+            
             _fileModels.Add(fileModel);
+            
+            ReadUsings(syntaxTree, fileModel);
+        }
+
+        private void ReadMethods(ClassDeclarationSyntax classDeclarationSyntax, ClassModel classModel,
+            SemanticModel semanticModel)
+        {
+            List<MethodDeclarationSyntax> methodDeclarationSyntaxes = classDeclarationSyntax
+                .DescendantNodes()
+                .OfType<MethodDeclarationSyntax>()
+                .ToList();
+
+            foreach (MethodDeclarationSyntax methodDeclarationSyntax in methodDeclarationSyntaxes)
+            {
+                MethodModel methodModel = new MethodModel();
+
+                methodModel.Name = methodDeclarationSyntax.Identifier.Text;
+
+                IMethodSymbol methodSymbol = semanticModel.GetDeclaredSymbol(methodDeclarationSyntax);
+
+                methodModel.Static = methodSymbol.IsStatic;
+                methodModel.Abstract = methodSymbol.IsAbstract;
+                methodModel.Sealed = methodSymbol.IsSealed;
+                methodModel.Async = methodSymbol.IsAsync;
+                methodModel.Override = methodSymbol.IsOverride;
+                methodModel.Virtual = methodSymbol.IsVirtual;
+                methodModel.Accessibility = methodSymbol.DeclaredAccessibility.ToString();
+
+                classModel.Methods.Add(methodModel);
+            }
+        }
+        
+        private void ReadConstructors(ClassDeclarationSyntax classDeclarationSyntax, ClassModel classModel,
+            SemanticModel semanticModel)
+        {
+            List<ConstructorDeclarationSyntax> constructorDeclarationSyntaxes = classDeclarationSyntax
+                .DescendantNodes()
+                .OfType<ConstructorDeclarationSyntax>()
+                .ToList();
+
+            foreach (ConstructorDeclarationSyntax constructorDeclarationSyntax in constructorDeclarationSyntaxes)
+            {
+                ConstructorModel constructorModel = new ConstructorModel();
+
+                constructorModel.Name = constructorDeclarationSyntax.Identifier.Text;
+
+                IMethodSymbol methodSymbol = semanticModel.GetDeclaredSymbol(constructorDeclarationSyntax);
+
+                constructorModel.Static = methodSymbol.IsStatic;
+                constructorModel.Abstract = methodSymbol.IsAbstract;
+                constructorModel.Sealed = methodSymbol.IsSealed;
+                constructorModel.Async = methodSymbol.IsAsync;
+                constructorModel.Override = methodSymbol.IsOverride;
+                constructorModel.Virtual = methodSymbol.IsVirtual;
+                constructorModel.Accessibility = methodSymbol.DeclaredAccessibility.ToString();
+
+                classModel.Constructors.Add(constructorModel);
+            }
+        }
+
+        private static void ReadUsings(SyntaxTree syntaxTree, FileModel fileModel)
+        {
+            List<UsingDirectiveSyntax> usingDirectiveSyntaxes = syntaxTree
+                .GetRoot()
+                .DescendantNodes()
+                .OfType<UsingDirectiveSyntax>()
+                .ToList();
+
+            foreach (UsingDirectiveSyntax usingDirectiveSyntax in usingDirectiveSyntaxes)
+            {
+                UsingModel usingModel = new UsingModel();
+
+                usingModel.Name = usingDirectiveSyntax.Name.ToString();
+
+                NameEqualsSyntax nameEqualsSyntax =
+                    usingDirectiveSyntax.DescendantNodes().OfType<NameEqualsSyntax>().FirstOrDefault();
+                if (nameEqualsSyntax != null)
+                {
+                    usingModel.Alias = nameEqualsSyntax.Name.ToString();
+                }
+
+                if (usingDirectiveSyntax.StaticKeyword.Text != "")
+                {
+                    usingModel.StaticDirective = true;
+                }
+
+                fileModel.Usings.Add(usingModel);
+            }
         }
 
         private static string TryToReadFile(FileInfo fileInfo)
