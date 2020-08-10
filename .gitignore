@@ -35,3 +35,4 @@ msbuild.wrn
 
 # Custom
 out
+build-and-deploy.sh
