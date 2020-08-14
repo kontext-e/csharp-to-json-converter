@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using csharp_to_json_converter.model;
+using csharp_to_json_converter.utils.analyzers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -39,7 +41,10 @@ namespace csharp_to_json_converter.utils
             _compilation = CSharpCompilation
                 .Create("all")
                 .AddSyntaxTrees(_syntaxTrees.Values)
-                .AddReferences(MetadataReference.CreateFromFile(typeof(object).Assembly.Location));
+                .AddReferences(
+                    MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+                    MetadataReference.CreateFromFile(typeof(Console).Assembly.Location)
+                );
 
             Logger.Info("Finished creating compilation.");
         }
@@ -69,72 +74,56 @@ namespace csharp_to_json_converter.utils
             {
                 return;
             }
-
-            FileModel fileModel = new FileModel();
-
-            fileModel.AbsolutePath = fileInfo.FullName;
-
+            
             SyntaxTree syntaxTree = _syntaxTrees[fileInfo.FullName];
             SemanticModel semanticModel = _compilation.GetSemanticModel(syntaxTree);
-
-            List<ClassDeclarationSyntax> classDeclarationSyntaxes = syntaxTree
-                .GetRoot()
-                .DescendantNodes()
-                .OfType<ClassDeclarationSyntax>()
-                .ToList();
-
-            foreach (ClassDeclarationSyntax classDeclarationSyntax in classDeclarationSyntaxes)
-            {
-                ClassModel classModel = new ClassModel
-                {
-                    Name = classDeclarationSyntax.Identifier.ValueText,
-                    Fqn = semanticModel.GetDeclaredSymbol(classDeclarationSyntax).ToString()
-                };
-
-                INamedTypeSymbol namedTypeSymbol = semanticModel.GetDeclaredSymbol(classDeclarationSyntax);
-
-                classModel.Abstract = namedTypeSymbol.IsAbstract;
-                classModel.Sealed = namedTypeSymbol.IsSealed;
-
-                ReadMethods(classDeclarationSyntax, classModel, semanticModel);
-                ReadConstructors(classDeclarationSyntax, classModel, semanticModel);
-
-                fileModel.Classes.Add(classModel);
-            }
             
-            _fileModels.Add(fileModel);
-            
-            ReadUsings(syntaxTree, fileModel);
-        }
-
-        private void ReadMethods(ClassDeclarationSyntax classDeclarationSyntax, ClassModel classModel,
-            SemanticModel semanticModel)
-        {
-            List<MethodDeclarationSyntax> methodDeclarationSyntaxes = classDeclarationSyntax
-                .DescendantNodes()
-                .OfType<MethodDeclarationSyntax>()
-                .ToList();
-
-            foreach (MethodDeclarationSyntax methodDeclarationSyntax in methodDeclarationSyntaxes)
-            {
-                MethodModel methodModel = new MethodModel();
-
-                methodModel.Name = methodDeclarationSyntax.Identifier.Text;
-
-                IMethodSymbol methodSymbol = semanticModel.GetDeclaredSymbol(methodDeclarationSyntax);
-
-                methodModel.Static = methodSymbol.IsStatic;
-                methodModel.Abstract = methodSymbol.IsAbstract;
-                methodModel.Sealed = methodSymbol.IsSealed;
-                methodModel.Async = methodSymbol.IsAsync;
-                methodModel.Override = methodSymbol.IsOverride;
-                methodModel.Virtual = methodSymbol.IsVirtual;
-                methodModel.Accessibility = methodSymbol.DeclaredAccessibility.ToString();
-
-                classModel.Methods.Add(methodModel);
-            }
+            FileAnalyzer fileAnalyzer = new FileAnalyzer(syntaxTree, semanticModel);
+            _fileModels.Add(fileAnalyzer.Analyze(fileInfo));
         }
         
+
+        private void ReadInvocations(MethodDeclarationSyntax methodDeclarationSyntax, MethodModel methodModel,
+            SemanticModel semanticModel)
+        {
+            List<InvocationExpressionSyntax> invocationExpressionSyntaxes = methodDeclarationSyntax
+                .DescendantNodes()
+                .OfType<InvocationExpressionSyntax>()
+                .ToList();
+
+            foreach (InvocationExpressionSyntax invocationExpressionSyntax in invocationExpressionSyntaxes)
+            {
+                IMethodSymbol methodSymbol = null;
+
+                MemberAccessExpressionSyntax memberAccessExpressionSyntax =
+                    invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax;
+
+                IdentifierNameSyntax identifierNameSyntax =
+                    invocationExpressionSyntax.Expression as IdentifierNameSyntax;
+
+                if (memberAccessExpressionSyntax != null)
+                {
+                    methodSymbol = semanticModel.GetSymbolInfo(memberAccessExpressionSyntax).Symbol as IMethodSymbol;
+                }
+                else if (identifierNameSyntax != null)
+                {
+                    methodSymbol = semanticModel.GetSymbolInfo(identifierNameSyntax).Symbol as IMethodSymbol;
+                }
+
+                if (methodSymbol == null)
+                {
+                    Logger.Warn("Unknown invocation expression.");
+                    return;
+                }
+
+                InvokesModel invokesModel = new InvokesModel();
+                invokesModel.LineNumber =
+                    invocationExpressionSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                invokesModel.MethodId = methodSymbol.ToString();
+                methodModel.Invocations.Add(invokesModel);
+            }
+        }
+
         private void ReadConstructors(ClassDeclarationSyntax classDeclarationSyntax, ClassModel classModel,
             SemanticModel semanticModel)
         {
@@ -160,36 +149,6 @@ namespace csharp_to_json_converter.utils
                 constructorModel.Accessibility = methodSymbol.DeclaredAccessibility.ToString();
 
                 classModel.Constructors.Add(constructorModel);
-            }
-        }
-
-        private static void ReadUsings(SyntaxTree syntaxTree, FileModel fileModel)
-        {
-            List<UsingDirectiveSyntax> usingDirectiveSyntaxes = syntaxTree
-                .GetRoot()
-                .DescendantNodes()
-                .OfType<UsingDirectiveSyntax>()
-                .ToList();
-
-            foreach (UsingDirectiveSyntax usingDirectiveSyntax in usingDirectiveSyntaxes)
-            {
-                UsingModel usingModel = new UsingModel();
-
-                usingModel.Name = usingDirectiveSyntax.Name.ToString();
-
-                NameEqualsSyntax nameEqualsSyntax =
-                    usingDirectiveSyntax.DescendantNodes().OfType<NameEqualsSyntax>().FirstOrDefault();
-                if (nameEqualsSyntax != null)
-                {
-                    usingModel.Alias = nameEqualsSyntax.Name.ToString();
-                }
-
-                if (usingDirectiveSyntax.StaticKeyword.Text != "")
-                {
-                    usingModel.StaticDirective = true;
-                }
-
-                fileModel.Usings.Add(usingModel);
             }
         }
 

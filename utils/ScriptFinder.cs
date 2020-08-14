@@ -23,6 +23,11 @@ namespace csharp_to_json_converter.utils
 
             foreach (DirectoryInfo dirInfo in subDirs)
             {
+                if (directoryInfo.Name.Equals("obj") || directoryInfo.Name.Equals("bin"))
+                {
+                    continue;
+                }
+                
                 fileInfos.AddRange(FindScriptsRecursivelyUnder(dirInfo));
             }
 

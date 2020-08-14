@@ -67,7 +67,7 @@ namespace csharp_to_json_converter
             string fileName = fileModel.AbsolutePath
                                   .Replace("\\", ".")
                                   .Replace(":", "")
-                              + "json";
+                              + ".json";
             return Path.Combine(outputDirectory.FullName, fileName);
         }
     }
