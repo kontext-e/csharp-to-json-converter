@@ -2,7 +2,7 @@ language: csharp
 mono: none
 dotnet: 3.1.401
 
-before_deploy:
+script:
   - dotnet publish --runtime win-x64
   - ls bin/Debug
 
