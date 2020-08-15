@@ -9,14 +9,21 @@ language: minimal
 
 script:
   - dotnet-sdk.dotnet publish --runtime win-x64
-  - ls bin/Debug
+  - dotnet-sdk.dotnet publish --runtime linux-x64
+  - dotnet-sdk.dotnet publish --runtime osx-x64
+  - zip -r win-x64-csharp-to-json-converter.zip bin/Debug/net5.0/win-x64/publish/
+  - zip -r linux-x64-csharp-to-json-converter.zip bin/Debug/net5.0/linux-x64/publish/
+  - zip -r osx-x64-csharp-to-json-converter.zip bin/Debug/net5.0/osx-x64/publish/
 
 deploy:
   draft: true
   provider: releases
   api_key:
     secure: M30bXS0TxcjHP3QkJLu6amA71sFhYriTiVYLJrxiyjA9DUpkjDNAjQWF5GxMRxHuzyDywVCbYsmYjWbCIh+RJWgGHbDAGQFgetwSJx2eKogizBY+WGD38wb4jnvwROZ7BdCyHuDMXYlVSFoEA2PoPwRRQuYPzutJelb0fPvnIigi2k4ZfLkr3TrlREQSNNN03l71+YHdBKIy3v16JuLwFHdp3P+qxSepDRSEEI/OqMWtaTJF1KvorDgdq8kDOVyXsBtRGdjkfbMQfYC346xyoOFrnoCdM/SsqOo3ufirH68kBGRUtpTJuDtLS78WYdffG3o6ONe+GYSZRvKJ+4gruOfDs5npjHf/mG4zGsNXBvIEsaTE+IfLSDsd5rgyq5m63K3MEQHn3xMhzfOAwpZnRQhwQVnWeDJkUUKL3s+tWoV8HopvqNsAYyREc0se7C93JBs5Zj1eIdE4NVAtqnFLUpBVtz5HHnZCtHVOG6hdoUAi/R8Z0rL6JePRs+nla2BOy4+jHGJspMoyntgHEe/N87MXuxhXwLkmg1TnbU2+7NKRDsK9FBBgJqp5TRfn3gN7GzvlLlZs8jtIgbtI3F6PhMeaAembrLqnCKUvtvcaA2aA7xTHPoci8aBBskMM5z4Btt4uWZar1ficP2KdrNT5ncnrM4YxV5AXyReQeBdghbI=
-  file: /home/travis/build/softvis-research/csharp-to-json-converter/bin/Debug/net5.0/win-x64/publish/**/*
+  file: 
+    - win-x64-csharp-to-json-converter.zip
+    - linux-x64-csharp-to-json-converter.zip
+    - osx-x64-csharp-to-json-converter.zip
   on:
     repo: softvis-research/csharp-to-json-converter
   skip_cleanup: true
