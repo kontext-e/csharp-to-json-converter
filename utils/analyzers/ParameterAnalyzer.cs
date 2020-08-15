@@ -12,9 +12,9 @@ namespace csharp_to_json_converter.utils.analyzers
         {
         }
 
-        public void Analyze(MethodDeclarationSyntax methodDeclarationSyntax, MethodModel methodModel)
+        public void Analyze(SyntaxNode syntaxNode, MethodModel methodModel)
         {
-            List<ParameterSyntax> parameterSyntaxes = methodDeclarationSyntax
+            List<ParameterSyntax> parameterSyntaxes = syntaxNode
                 .DescendantNodes()
                 .OfType<ParameterSyntax>()
                 .ToList();

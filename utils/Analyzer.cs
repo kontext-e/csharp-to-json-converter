@@ -19,9 +19,11 @@ namespace csharp_to_json_converter.utils
         private List<FileInfo> _fileInfos;
         private Dictionary<string, SyntaxTree> _syntaxTrees;
         private Compilation _compilation;
+        private DirectoryInfo _inputDirectory;
 
-        public Analyzer(List<FileInfo> fileInfos)
+        public Analyzer(List<FileInfo> fileInfos, DirectoryInfo inputDirectory)
         {
+            _inputDirectory = inputDirectory;
             _fileModels = new List<FileModel>();
             _fileInfos = fileInfos;
             _syntaxTrees = new Dictionary<string, SyntaxTree>();
@@ -78,7 +80,7 @@ namespace csharp_to_json_converter.utils
             SyntaxTree syntaxTree = _syntaxTrees[fileInfo.FullName];
             SemanticModel semanticModel = _compilation.GetSemanticModel(syntaxTree);
             
-            FileAnalyzer fileAnalyzer = new FileAnalyzer(syntaxTree, semanticModel);
+            FileAnalyzer fileAnalyzer = new FileAnalyzer(syntaxTree, semanticModel, _inputDirectory);
             _fileModels.Add(fileAnalyzer.Analyze(fileInfo));
         }
         

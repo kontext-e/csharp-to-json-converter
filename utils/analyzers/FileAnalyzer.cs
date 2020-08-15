@@ -8,9 +8,12 @@ namespace csharp_to_json_converter.utils.analyzers
     {
         private readonly ClassAnalyzer _classAnalyzer;
         private readonly UsingsAnalyzer _usingsAnalyzer;
+        private readonly DirectoryInfo _inputDirectory;
 
-        public FileAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel) : base(syntaxTree, semanticModel)
+        public FileAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel, DirectoryInfo inputDirectory) : base(
+            syntaxTree, semanticModel)
         {
+            _inputDirectory = inputDirectory;
             _classAnalyzer = new ClassAnalyzer(SyntaxTree, SemanticModel);
             _usingsAnalyzer = new UsingsAnalyzer(SyntaxTree, SemanticModel);
         }
@@ -19,10 +22,11 @@ namespace csharp_to_json_converter.utils.analyzers
         {
             FileModel fileModel = new FileModel();
             fileModel.AbsolutePath = fileInfo.FullName;
+            fileModel.RelativePath = Path.GetRelativePath(_inputDirectory.FullName, fileInfo.FullName);
 
             _classAnalyzer.Analyze(fileModel);
             _usingsAnalyzer.Analyze(fileModel);
-            
+
             return fileModel;
         }
     }

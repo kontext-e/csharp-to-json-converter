@@ -8,9 +8,14 @@ namespace csharp_to_json_converter.utils.analyzers
 {
     public class ConstructorAnalyzer : AbstractAnalyzer
     {
+        private readonly InvocationAnalyzer _invocationAnalyzer;
+        private readonly ParameterAnalyzer _parameterAnalyzer;
+        
         internal ConstructorAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel) : base(syntaxTree,
             semanticModel)
         {
+            _invocationAnalyzer = new InvocationAnalyzer(SyntaxTree, SemanticModel);
+            _parameterAnalyzer = new ParameterAnalyzer(SyntaxTree, SemanticModel);
         }
 
         public void Analyze(ClassDeclarationSyntax classDeclarationSyntax, ClassModel classModel)
@@ -29,6 +34,7 @@ namespace csharp_to_json_converter.utils.analyzers
                 IMethodSymbol methodSymbol =
                     SemanticModel.GetDeclaredSymbol(constructorDeclarationSyntax) as IMethodSymbol;
 
+                constructorModel.Fqn = methodSymbol.ToString();
                 constructorModel.Static = methodSymbol.IsStatic;
                 constructorModel.Abstract = methodSymbol.IsAbstract;
                 constructorModel.Sealed = methodSymbol.IsSealed;
@@ -36,6 +42,13 @@ namespace csharp_to_json_converter.utils.analyzers
                 constructorModel.Override = methodSymbol.IsOverride;
                 constructorModel.Virtual = methodSymbol.IsVirtual;
                 constructorModel.Accessibility = methodSymbol.DeclaredAccessibility.ToString();
+                constructorModel.FirstLineNumber =
+                    constructorDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                constructorModel.LastLineNumber =
+                    constructorDeclarationSyntax.GetLocation().GetLineSpan().EndLinePosition.Line + 1;
+
+                _invocationAnalyzer.Analyze(constructorDeclarationSyntax, constructorModel);
+                _parameterAnalyzer.Analyze(constructorDeclarationSyntax, constructorModel);
 
                 classModel.Constructors.Add(constructorModel);
             }

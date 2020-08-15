@@ -5,6 +5,7 @@ namespace csharp_to_json_converter.model
     public class FileModel
     {
         public string AbsolutePath { get; set; }
+        public string RelativePath { get; set; }
         public List<ClassModel> Classes { get; set; }
         public List<UsingModel> Usings { get; set; }
 

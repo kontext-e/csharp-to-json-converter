@@ -47,7 +47,7 @@ namespace csharp_to_json_converter
             List<FileInfo> fileInfos = ScriptFinder.FindScriptsRecursivelyUnder(inputDirectory);
             Logger.Info("Found '{0}' scripts in '{1}'.", fileInfos.Count, inputDirectory.FullName);
 
-            Analyzer analyzer = new Analyzer(fileInfos);
+            Analyzer analyzer = new Analyzer(fileInfos, inputDirectory);
 
             List<FileModel> fileModelList = analyzer.Analyze();
 

@@ -16,13 +16,18 @@ namespace csharp_to_json_converter.utils.analyzers
         {
         }
 
-        public void Analyze(MethodDeclarationSyntax methodDeclarationSyntax, MethodModel methodModel)
+        public void Analyze(SyntaxNode syntaxNode, MethodModel methodModel)
         {
-            List<InvocationExpressionSyntax> invocationExpressionSyntaxes = methodDeclarationSyntax
+            List<InvocationExpressionSyntax> invocationExpressionSyntaxes = syntaxNode
                 .DescendantNodes()
                 .OfType<InvocationExpressionSyntax>()
                 .ToList();
 
+            ProcessInvocations(invocationExpressionSyntaxes, methodModel);
+        }
+
+        private void ProcessInvocations(List<InvocationExpressionSyntax> invocationExpressionSyntaxes, MethodModel methodModel)
+        {
             foreach (InvocationExpressionSyntax invocationExpressionSyntax in invocationExpressionSyntaxes)
             {
                 IMethodSymbol methodSymbol = null;
