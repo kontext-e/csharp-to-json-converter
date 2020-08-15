@@ -16,7 +16,7 @@ deploy:
   provider: releases
   api_key:
     secure: M30bXS0TxcjHP3QkJLu6amA71sFhYriTiVYLJrxiyjA9DUpkjDNAjQWF5GxMRxHuzyDywVCbYsmYjWbCIh+RJWgGHbDAGQFgetwSJx2eKogizBY+WGD38wb4jnvwROZ7BdCyHuDMXYlVSFoEA2PoPwRRQuYPzutJelb0fPvnIigi2k4ZfLkr3TrlREQSNNN03l71+YHdBKIy3v16JuLwFHdp3P+qxSepDRSEEI/OqMWtaTJF1KvorDgdq8kDOVyXsBtRGdjkfbMQfYC346xyoOFrnoCdM/SsqOo3ufirH68kBGRUtpTJuDtLS78WYdffG3o6ONe+GYSZRvKJ+4gruOfDs5npjHf/mG4zGsNXBvIEsaTE+IfLSDsd5rgyq5m63K3MEQHn3xMhzfOAwpZnRQhwQVnWeDJkUUKL3s+tWoV8HopvqNsAYyREc0se7C93JBs5Zj1eIdE4NVAtqnFLUpBVtz5HHnZCtHVOG6hdoUAi/R8Z0rL6JePRs+nla2BOy4+jHGJspMoyntgHEe/N87MXuxhXwLkmg1TnbU2+7NKRDsK9FBBgJqp5TRfn3gN7GzvlLlZs8jtIgbtI3F6PhMeaAembrLqnCKUvtvcaA2aA7xTHPoci8aBBskMM5z4Btt4uWZar1ficP2KdrNT5ncnrM4YxV5AXyReQeBdghbI=
-  file: bin/Debug/net5.0/win-x64/publish/**/*
+  file: /home/travis/build/softvis-research/csharp-to-json-converter/bin/Debug/net5.0/win-x64/publish/**/*
   on:
     repo: softvis-research/csharp-to-json-converter
   skip_cleanup: true
