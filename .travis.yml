@@ -11,9 +11,13 @@ script:
   - dotnet-sdk.dotnet publish --runtime win-x64
   - dotnet-sdk.dotnet publish --runtime linux-x64
   - dotnet-sdk.dotnet publish --runtime osx-x64
-  - zip -r win-x64-csharp-to-json-converter.zip bin/Debug/net5.0/win-x64/publish/
-  - zip -r linux-x64-csharp-to-json-converter.zip bin/Debug/net5.0/linux-x64/publish/
-  - zip -r osx-x64-csharp-to-json-converter.zip bin/Debug/net5.0/osx-x64/publish/
+  - cd bin/Debug/net5.0/win-x64/publish/
+  - zip -r ../../../../../win-x64-csharp-to-json-converter.zip *
+  - cd ../../linux-x64/publish/
+  - zip -r ../../../../../linux-x64-csharp-to-json-converter.zip *
+  - cd ../../osx-x64/publish/
+  - zip -r ../../../../../osx-x64-csharp-to-json-converter.zip *
+  - cd ../../../../..
 
 deploy:
   draft: true
