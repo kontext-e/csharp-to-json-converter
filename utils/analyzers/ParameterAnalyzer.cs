@@ -21,22 +21,32 @@ namespace csharp_to_json_converter.utils.analyzers
 
             foreach (ParameterSyntax parameterSyntax in parameterSyntaxes)
             {
-                IdentifierNameSyntax identifierNameSyntax = parameterSyntax.DescendantNodes().OfType<IdentifierNameSyntax>().FirstOrDefault();
+                IdentifierNameSyntax identifierNameSyntax =
+                    parameterSyntax.DescendantNodes().OfType<IdentifierNameSyntax>().FirstOrDefault();
 
                 if (identifierNameSyntax != null)
                 {
                     ITypeSymbol typeSymbol = SemanticModel.GetSymbolInfo(identifierNameSyntax).Symbol as ITypeSymbol;
-                    methodModel.Parameters.Add(typeSymbol.ToString());
+                    methodModel.Parameters.Add(new ParameterModel
+                    {
+                        Type = typeSymbol.ToString(),
+                        Name = parameterSyntax.Identifier.Text
+                    });
                     continue;
                 }
-                
-                PredefinedTypeSyntax predefinedTypeSyntax = parameterSyntax.DescendantNodes().OfType<PredefinedTypeSyntax>().FirstOrDefault();
+
+                PredefinedTypeSyntax predefinedTypeSyntax =
+                    parameterSyntax.DescendantNodes().OfType<PredefinedTypeSyntax>().FirstOrDefault();
 
 
                 if (predefinedTypeSyntax != null)
                 {
                     ITypeSymbol typeSymbol = SemanticModel.GetSymbolInfo(predefinedTypeSyntax).Symbol as ITypeSymbol;
-                    methodModel.Parameters.Add(typeSymbol.ToString());
+                    methodModel.Parameters.Add(new ParameterModel
+                    {
+                        Type = typeSymbol.ToString(),
+                        Name = parameterSyntax.Identifier.Text
+                    });
                 }
             }
         }

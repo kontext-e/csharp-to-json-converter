@@ -10,7 +10,7 @@ namespace csharp_to_json_converter.utils.analyzers
     {
         private readonly InvocationAnalyzer _invocationAnalyzer;
         private readonly ParameterAnalyzer _parameterAnalyzer;
-        
+
         internal ConstructorAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel) : base(syntaxTree,
             semanticModel)
         {
@@ -20,10 +20,18 @@ namespace csharp_to_json_converter.utils.analyzers
 
         public void Analyze(ClassDeclarationSyntax classDeclarationSyntax, ClassModel classModel)
         {
-            List<ConstructorDeclarationSyntax> constructorDeclarationSyntaxes = classDeclarationSyntax
+            List<ConstructorModel> constructorModels = FindContructors(classDeclarationSyntax);
+            classModel.Constructors.AddRange(constructorModels);
+        }
+
+        private List<ConstructorModel> FindContructors(SyntaxNode syntaxNode)
+        {
+            List<ConstructorDeclarationSyntax> constructorDeclarationSyntaxes = syntaxNode
                 .DescendantNodes()
                 .OfType<ConstructorDeclarationSyntax>()
                 .ToList();
+
+            List<ConstructorModel> result = new List<ConstructorModel>();
 
             foreach (ConstructorDeclarationSyntax constructorDeclarationSyntax in constructorDeclarationSyntaxes)
             {
@@ -50,8 +58,16 @@ namespace csharp_to_json_converter.utils.analyzers
                 _invocationAnalyzer.Analyze(constructorDeclarationSyntax, constructorModel);
                 _parameterAnalyzer.Analyze(constructorDeclarationSyntax, constructorModel);
 
-                classModel.Constructors.Add(constructorModel);
+                result.Add(constructorModel);
             }
+
+            return result;
+        }
+
+        public void Analyze(InterfaceDeclarationSyntax interfaceDeclarationSyntax, InterfaceModel interfaceModel)
+        {
+            List<ConstructorModel> constructorModels = FindContructors(interfaceDeclarationSyntax);
+            interfaceModel.Constructors.AddRange(constructorModels);
         }
     }
 }

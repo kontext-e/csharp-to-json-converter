@@ -17,18 +17,19 @@ namespace csharp_to_json_converter.model
         public int FirstLineNumber { get; set; }
         public int LastLineNumber { get; set; }
 
+        // ReSharper disable once UnusedMember.Global
         public int EffectiveLineCount
         {
             get { return LastLineNumber - FirstLineNumber; }
         }
 
         public List<InvokesModel> Invocations { get; set; }
-        public List<string> Parameters { get; set; }
+        public List<ParameterModel> Parameters { get; set; }
 
         public MethodModel()
         {
             Invocations = new List<InvokesModel>();
-            Parameters = new List<string>();
+            Parameters = new List<ParameterModel>();
         }
     }
 }

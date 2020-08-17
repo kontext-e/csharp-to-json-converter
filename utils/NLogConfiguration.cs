@@ -9,8 +9,8 @@ namespace csharp_to_json_converter.utils
         internal static void Configure(LogLevel logLevel)
         {
             LoggingConfiguration config = new LoggingConfiguration();
-            ConsoleTarget logconsole = new ConsoleTarget("logconsole");
-            config.AddRule(logLevel, LogLevel.Fatal, logconsole);
+            ConsoleTarget consoleTarget = new ConsoleTarget("Log to Console");
+            config.AddRule(logLevel, LogLevel.Fatal, consoleTarget);
             LogManager.Configuration = config;
         }
     }

@@ -9,7 +9,7 @@ namespace csharp_to_json_converter.utils
     public static class ScriptFinder
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-        
+
         internal static List<FileInfo> FindScriptsRecursivelyUnder(DirectoryInfo directoryInfo)
         {
             List<FileInfo> fileInfos = TryToFindScriptsIn(directoryInfo);
@@ -27,7 +27,7 @@ namespace csharp_to_json_converter.utils
                 {
                     continue;
                 }
-                
+
                 fileInfos.AddRange(FindScriptsRecursivelyUnder(dirInfo));
             }
 

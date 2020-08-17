@@ -55,19 +55,30 @@ namespace csharp_to_json_converter
 
             foreach (FileModel fileModel in fileModelList)
             {
+                DirectoryInfo subFolderInOutputDirectory =
+                    CreateSubFolderInOutputDirectory(fileModel, inputDirectory, outputDirectory);
+
                 string jsonString = JsonSerializer.Serialize(fileModel, _options);
-                File.WriteAllText(BuildJsonName(outputDirectory, fileModel), jsonString);
+                File.WriteAllText(BuildJsonName(subFolderInOutputDirectory, fileModel), jsonString);
             }
 
             Logger.Info("Finished writing model to JSON.");
         }
 
+        private static DirectoryInfo CreateSubFolderInOutputDirectory(FileModel fileModel, DirectoryInfo inputDirectory,
+            DirectoryInfo outputDirectory)
+        {
+            DirectoryInfo parent = Directory.GetParent(fileModel.AbsolutePath);
+            string relativeDirectoryPath = Path.GetRelativePath(inputDirectory.FullName, parent.FullName);
+            string absoluteDirectoryPath =
+                Path.Combine(outputDirectory.FullName, inputDirectory.Name, relativeDirectoryPath);
+            DirectoryInfo subFolderOfOutputDirectory = Directory.CreateDirectory(absoluteDirectoryPath);
+            return subFolderOfOutputDirectory;
+        }
+
         private static string BuildJsonName(DirectoryInfo outputDirectory, FileModel fileModel)
         {
-            string fileName = fileModel.AbsolutePath
-                                  .Replace("\\", ".")
-                                  .Replace(":", "")
-                              + ".json";
+            string fileName = fileModel.Name + ".json";
             return Path.Combine(outputDirectory.FullName, fileName);
         }
     }
