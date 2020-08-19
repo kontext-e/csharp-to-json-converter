@@ -38,6 +38,7 @@ namespace csharp_to_json_converter.utils.analyzers
 
                 enumModel.Fqn = namedTypeSymbol.ToString();
                 enumModel.Name = namedTypeSymbol.Name;
+                enumModel.Md5 = BuildMD5(enumDeclarationSyntax.GetText().ToString());
 
                 List<EnumMemberDeclarationSyntax> enumMemberDeclarationSyntaxes = enumDeclarationSyntax
                     .DescendantNodes()

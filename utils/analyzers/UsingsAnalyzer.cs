@@ -35,7 +35,7 @@ namespace csharp_to_json_converter.utils.analyzers
 
                 if (usingDirectiveSyntax.StaticKeyword.Text != "")
                 {
-                    usingModel.StaticDirective = true;
+                    usingModel.Static = true;
                 }
 
                 fileModel.Usings.Add(usingModel);

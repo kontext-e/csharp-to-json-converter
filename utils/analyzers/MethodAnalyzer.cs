@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using csharp_to_json_converter.model;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.FlowAnalysis;
 
 namespace csharp_to_json_converter.utils.analyzers
 {
@@ -31,6 +33,27 @@ namespace csharp_to_json_converter.utils.analyzers
                 methodModel.Name = methodDeclarationSyntax.Identifier.Text;
 
                 IMethodSymbol methodSymbol = SemanticModel.GetDeclaredSymbol(methodDeclarationSyntax) as IMethodSymbol;
+
+                ControlFlowGraph controlFlowGraph = ControlFlowGraph
+                    .Create(methodDeclarationSyntax, SemanticModel, CancellationToken.None);
+
+                int numberOfBlocks = controlFlowGraph.Blocks.Length;
+                int numberOfEdges = 0;
+
+                foreach (BasicBlock basicBlock in controlFlowGraph.Blocks)
+                {
+                    if (basicBlock.ConditionalSuccessor != null)
+                    {
+                        numberOfEdges++;
+                    }
+
+                    if (basicBlock.FallThroughSuccessor != null)
+                    {
+                        numberOfEdges++;
+                    }
+                }
+
+                methodModel.CyclomaticComplexity = numberOfEdges - numberOfBlocks + 2;
 
                 methodModel.Fqn = methodSymbol.ToString();
                 methodModel.Static = methodSymbol.IsStatic;

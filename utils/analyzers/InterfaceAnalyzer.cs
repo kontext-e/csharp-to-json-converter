@@ -28,14 +28,15 @@ namespace csharp_to_json_converter.utils.analyzers
                 InterfaceModel interfaceModel = new InterfaceModel
                 {
                     Name = interfaceDeclarationSyntax.Identifier.ValueText,
-                    Fqn = SemanticModel.GetDeclaredSymbol(interfaceDeclarationSyntax).ToString()
+                    Fqn = SemanticModel.GetDeclaredSymbol(interfaceDeclarationSyntax).ToString(),
+                    Md5 = BuildMD5(interfaceDeclarationSyntax.GetText().ToString())
                 };
 
                 INamedTypeSymbol namedTypeSymbol =
                     SemanticModel.GetDeclaredSymbol(interfaceDeclarationSyntax) as INamedTypeSymbol;
 
                 interfaceModel.Accessibility = namedTypeSymbol.DeclaredAccessibility.ToString();
-                
+
                 _constructorAnalyzer.Analyze(interfaceDeclarationSyntax, interfaceModel);
 
                 fileModel.Interfaces.Add(interfaceModel);
