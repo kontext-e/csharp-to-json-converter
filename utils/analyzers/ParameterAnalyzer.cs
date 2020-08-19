@@ -29,7 +29,7 @@ namespace csharp_to_json_converter.utils.analyzers
                     ITypeSymbol typeSymbol = SemanticModel.GetSymbolInfo(identifierNameSyntax).Symbol as ITypeSymbol;
                     methodModel.Parameters.Add(new ParameterModel
                     {
-                        Type = typeSymbol.ToString(),
+                        Type = typeSymbol?.ToString(),
                         Name = parameterSyntax.Identifier.Text
                     });
                     continue;
@@ -44,7 +44,7 @@ namespace csharp_to_json_converter.utils.analyzers
                     ITypeSymbol typeSymbol = SemanticModel.GetSymbolInfo(predefinedTypeSyntax).Symbol as ITypeSymbol;
                     methodModel.Parameters.Add(new ParameterModel
                     {
-                        Type = typeSymbol.ToString(),
+                        Type = typeSymbol?.ToString(),
                         Name = parameterSyntax.Identifier.Text
                     });
                 }

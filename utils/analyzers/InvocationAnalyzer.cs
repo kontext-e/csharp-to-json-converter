@@ -3,14 +3,11 @@ using System.Linq;
 using csharp_to_json_converter.model;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using NLog;
 
 namespace csharp_to_json_converter.utils.analyzers
 {
     public class InvocationAnalyzer : AbstractAnalyzer
     {
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-
         internal InvocationAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel) : base(syntaxTree,
             semanticModel)
         {
@@ -26,7 +23,8 @@ namespace csharp_to_json_converter.utils.analyzers
             ProcessInvocations(invocationExpressionSyntaxes, methodModel);
         }
 
-        private void ProcessInvocations(List<InvocationExpressionSyntax> invocationExpressionSyntaxes, MethodModel methodModel)
+        private void ProcessInvocations(IEnumerable<InvocationExpressionSyntax> invocationExpressionSyntaxes,
+            MethodModel methodModel)
         {
             foreach (InvocationExpressionSyntax invocationExpressionSyntax in invocationExpressionSyntaxes)
             {
@@ -47,16 +45,11 @@ namespace csharp_to_json_converter.utils.analyzers
                     methodSymbol = SemanticModel.GetSymbolInfo(identifierNameSyntax).Symbol as IMethodSymbol;
                 }
 
-                if (methodSymbol == null)
+                InvokesModel invokesModel = new InvokesModel
                 {
-                    Logger.Warn("Unknown invocation expression.");
-                    return;
-                }
-
-                InvokesModel invokesModel = new InvokesModel();
-                invokesModel.LineNumber =
-                    invocationExpressionSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
-                invokesModel.MethodId = methodSymbol.ToString();
+                    LineNumber = invocationExpressionSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
+                    MethodId = methodSymbol?.ToString()
+                };
                 methodModel.Invocations.Add(invokesModel);
             }
         }

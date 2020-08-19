@@ -34,26 +34,29 @@ namespace csharp_to_json_converter.utils.analyzers
 
                 IMethodSymbol methodSymbol = SemanticModel.GetDeclaredSymbol(methodDeclarationSyntax) as IMethodSymbol;
 
-                ControlFlowGraph controlFlowGraph = ControlFlowGraph
-                    .Create(methodDeclarationSyntax, SemanticModel, CancellationToken.None);
-
-                int numberOfBlocks = controlFlowGraph.Blocks.Length;
-                int numberOfEdges = 0;
-
-                foreach (BasicBlock basicBlock in controlFlowGraph.Blocks)
+                if (methodSymbol != null && !methodSymbol.IsAbstract)
                 {
-                    if (basicBlock.ConditionalSuccessor != null)
+                    ControlFlowGraph controlFlowGraph = ControlFlowGraph
+                        .Create(methodDeclarationSyntax, SemanticModel, CancellationToken.None);
+
+                    int numberOfBlocks = controlFlowGraph.Blocks.Length;
+                    int numberOfEdges = 0;
+
+                    foreach (BasicBlock basicBlock in controlFlowGraph.Blocks)
                     {
-                        numberOfEdges++;
+                        if (basicBlock.ConditionalSuccessor != null)
+                        {
+                            numberOfEdges++;
+                        }
+
+                        if (basicBlock.FallThroughSuccessor != null)
+                        {
+                            numberOfEdges++;
+                        }
                     }
 
-                    if (basicBlock.FallThroughSuccessor != null)
-                    {
-                        numberOfEdges++;
-                    }
+                    methodModel.CyclomaticComplexity = numberOfEdges - numberOfBlocks + 2;
                 }
-
-                methodModel.CyclomaticComplexity = numberOfEdges - numberOfBlocks + 2;
 
                 methodModel.Fqn = methodSymbol.ToString();
                 methodModel.Static = methodSymbol.IsStatic;
