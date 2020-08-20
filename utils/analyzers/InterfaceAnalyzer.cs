@@ -41,6 +41,10 @@ namespace csharp_to_json_converter.utils.analyzers
                 }
 
                 interfaceModel.Accessibility = namedTypeSymbol.DeclaredAccessibility.ToString();
+                interfaceModel.FirstLineNumber =
+                    interfaceDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                interfaceModel.LastLineNumber =
+                    interfaceDeclarationSyntax.GetLocation().GetLineSpan().EndLinePosition.Line + 1;
 
                 _constructorAnalyzer.Analyze(interfaceDeclarationSyntax, interfaceModel);
 

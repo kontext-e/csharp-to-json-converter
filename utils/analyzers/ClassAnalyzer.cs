@@ -42,7 +42,12 @@ namespace csharp_to_json_converter.utils.analyzers
                 classModel.Accessibility = namedTypeSymbol.DeclaredAccessibility.ToString();
                 classModel.Abstract = namedTypeSymbol.IsAbstract;
                 classModel.Sealed = namedTypeSymbol.IsSealed;
+                classModel.Static = namedTypeSymbol.IsStatic;
                 classModel.Md5 = BuildMD5(classDeclarationSyntax.GetText().ToString());
+                classModel.FirstLineNumber =
+                    classDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                classModel.LastLineNumber =
+                    classDeclarationSyntax.GetLocation().GetLineSpan().EndLinePosition.Line + 1;
 
                 foreach (INamedTypeSymbol interfaceTypeSymbol in namedTypeSymbol.Interfaces)
                 {

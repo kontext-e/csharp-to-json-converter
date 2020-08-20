@@ -27,6 +27,11 @@ namespace csharp_to_json_converter.utils.analyzers
                     IFieldSymbol fieldSymbol =
                         SemanticModel.GetDeclaredSymbol(variableDeclaratorSyntax) as IFieldSymbol;
 
+                    if (fieldSymbol == null)
+                    {
+                        continue;
+                    }
+
                     FieldModel fieldModel = new FieldModel();
                     fieldModel.Name = fieldSymbol.Name;
                     fieldModel.Fqn = fieldSymbol.ToString();
@@ -41,7 +46,7 @@ namespace csharp_to_json_converter.utils.analyzers
 
                     if (fieldSymbol.HasConstantValue)
                     {
-                        fieldModel.ConstantValue = fieldSymbol.ConstantValue.ToString();
+                        fieldModel.ConstantValue = fieldSymbol.ConstantValue?.ToString();
                     }
 
                     fieldModel.Accessibility = fieldSymbol.DeclaredAccessibility.ToString();

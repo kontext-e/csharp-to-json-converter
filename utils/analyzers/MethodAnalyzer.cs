@@ -65,6 +65,7 @@ namespace csharp_to_json_converter.utils.analyzers
                 methodModel.Async = methodSymbol.IsAsync;
                 methodModel.Override = methodSymbol.IsOverride;
                 methodModel.Virtual = methodSymbol.IsVirtual;
+                methodModel.Extern = methodSymbol.IsExtern;
                 methodModel.Accessibility = methodSymbol.DeclaredAccessibility.ToString();
                 methodModel.ReturnType = methodSymbol.ReturnType.ToString();
                 methodModel.FirstLineNumber =
