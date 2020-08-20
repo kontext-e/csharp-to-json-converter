@@ -34,6 +34,11 @@ namespace csharp_to_json_converter.utils.analyzers
 
                 INamedTypeSymbol namedTypeSymbol =
                     SemanticModel.GetDeclaredSymbol(interfaceDeclarationSyntax) as INamedTypeSymbol;
+                
+                foreach (INamedTypeSymbol interfaceTypeSymbol in namedTypeSymbol.Interfaces)
+                {
+                    interfaceModel.ImplementedInterfaces.Add(interfaceTypeSymbol.ToString());
+                }
 
                 interfaceModel.Accessibility = namedTypeSymbol.DeclaredAccessibility.ToString();
 
