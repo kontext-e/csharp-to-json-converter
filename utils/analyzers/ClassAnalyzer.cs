@@ -11,12 +11,14 @@ namespace csharp_to_json_converter.utils.analyzers
         private readonly MethodAnalyzer _methodAnalyzer;
         private readonly ConstructorAnalyzer _constructorAnalyzer;
         private readonly FieldAnalyzer _fieldAnalyzer;
+        private readonly PropertyAnalyzer _propertyAnalyzer;
 
         internal ClassAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel) : base(syntaxTree, semanticModel)
         {
             _methodAnalyzer = new MethodAnalyzer(SyntaxTree, SemanticModel);
             _constructorAnalyzer = new ConstructorAnalyzer(SyntaxTree, SemanticModel);
             _fieldAnalyzer = new FieldAnalyzer(SyntaxTree, SemanticModel);
+            _propertyAnalyzer = new PropertyAnalyzer(SyntaxTree, SemanticModel);
         }
 
         internal void Analyze(FileModel fileModel)
@@ -43,6 +45,7 @@ namespace csharp_to_json_converter.utils.analyzers
                 classModel.Abstract = namedTypeSymbol.IsAbstract;
                 classModel.Sealed = namedTypeSymbol.IsSealed;
                 classModel.Static = namedTypeSymbol.IsStatic;
+                classModel.Partial = classDeclarationSyntax.Modifiers.Any(modifier => modifier.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PartialKeyword));
                 classModel.Md5 = BuildMD5(classDeclarationSyntax.GetText().ToString());
                 classModel.FirstLineNumber =
                     classDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
@@ -57,6 +60,7 @@ namespace csharp_to_json_converter.utils.analyzers
                 _fieldAnalyzer.Analyze(classDeclarationSyntax, classModel);
                 _methodAnalyzer.Analyze(classDeclarationSyntax, classModel);
                 _constructorAnalyzer.Analyze(classDeclarationSyntax, classModel);
+                _propertyAnalyzer.Analyze(classDeclarationSyntax, classModel);
 
                 fileModel.Classes.Add(classModel);
             }

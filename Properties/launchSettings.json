@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "csharp-to-json-converter": {
+      "commandName": "Project",
+      "commandLineArgs": "-i Documents\\feedbackservice-main -o Documents\\out",
+      "workingDirectory": "C:\\Users\\WilThi"
+    }
+  }
+}
