@@ -6,7 +6,7 @@ namespace csharp_to_json_converter.model
     {
         public ConstructorModel()
         {
-            Invocations = new List<InvokesModel>();
+            MemberAccesses = new List<MemberAccessModel>();
             Parameters = new List<ParameterModel>();
         }
     }
