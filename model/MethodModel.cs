@@ -10,12 +10,14 @@ namespace csharp_to_json_converter.model
         public string ReturnType { get; set; }
         public int CyclomaticComplexity { get; set; }
         public List<MemberAccessModel> MemberAccesses { get; set; }
+        public List<InvocationModel> Invocations { get; set; }
         public List<ParameterModel> Parameters { get; set; }
 
         public MethodModel()
         {
             MemberAccesses = new List<MemberAccessModel>();
             Parameters = new List<ParameterModel>();
+            Invocations = new List<InvocationModel>();
         }
     }
 }

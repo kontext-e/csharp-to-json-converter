@@ -2,7 +2,7 @@
   "profiles": {
     "csharp-to-json-converter": {
       "commandName": "Project",
-      "commandLineArgs": "-i Documents\\feedbackservice-main -o Documents\\out",
+      "commandLineArgs": "-i C:\\Users\\WilThi\\IdeaProjects\\jqa-csharp-plugin\\src\\test\\resources\\scanner\\test-csharp-project\\CSharpJqAssistantTestProject\\Project1 -o Documents\\out",
       "workingDirectory": "C:\\Users\\WilThi"
     }
   }

@@ -1,8 +1,8 @@
 ﻿namespace csharp_to_json_converter.model
 {
-    public class MemberAccessModel
+    public class InvocationModel
     {
         public int LineNumber { get; set; }
-        public string MemberId { get; set; }
+        public string MethodId { get; set; }
     }
 }
