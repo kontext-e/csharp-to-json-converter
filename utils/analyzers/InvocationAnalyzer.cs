@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using csharp_to_json_converter.model;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using IdentifierNameSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.IdentifierNameSyntax;
 using InvocationExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.InvocationExpressionSyntax;
 using MemberAccessExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.MemberAccessExpressionSyntax;
@@ -17,27 +19,28 @@ namespace csharp_to_json_converter.utils.analyzers
 
         public void Analyze(SyntaxNode syntaxNode, MethodModel methodModel)
         {
+            List<InvocationExpressionSyntax> invocationExpressionSyntaxes = syntaxNode.
+                DescendantNodes().
+                OfType<InvocationExpressionSyntax>().
+                ToList();
+            
+            ProcessInvocations(invocationExpressionSyntaxes, methodModel);
+            
             List<MemberAccessExpressionSyntax> memberAccessExpressionSyntaxes = syntaxNode
                 .DescendantNodes()
                 .OfType<MemberAccessExpressionSyntax>()
                 .ToList();
-            
-            ProcessMemberAccesses(memberAccessExpressionSyntaxes, methodModel);
 
-            List<InvocationExpressionSyntax> invocationExpressionSyntaxes = syntaxNode.
-                    DescendantNodes().
-                    OfType<InvocationExpressionSyntax>().
-                    ToList();
-            
-            ProcessInvocations(invocationExpressionSyntaxes, methodModel);
+            ProcessMemberAccesses(memberAccessExpressionSyntaxes, methodModel);
         }
 
         private void ProcessMemberAccesses(IEnumerable<MemberAccessExpressionSyntax> memberAccessExpressionSyntaxes,
             MethodModel methodModel)
         {
+            var invocations = methodModel.Invocations.ToList().Select(invocation => invocation.MethodId).ToList();
+            
             foreach (MemberAccessExpressionSyntax memberAccessExpressionSyntax in memberAccessExpressionSyntaxes)
             {
-                
                 var symbolInfo = SemanticModel.GetSymbolInfo(memberAccessExpressionSyntax);
                 var memberAccessModel = new MemberAccessModel
                 {
@@ -45,6 +48,19 @@ namespace csharp_to_json_converter.utils.analyzers
                     MemberId = symbolInfo.Symbol?.ToString()
                 };
                 methodModel.MemberAccesses.Add(memberAccessModel);
+            }
+        }
+                var symbol = symbolInfo.Symbol?.ToString();
+
+                if (!invocations.Contains(symbol))
+                {
+                    var memberAccessModel = new MemberAccessModel()
+                    {
+                        LineNumber = memberAccessExpressionSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
+                        MemberId = symbol
+                    };
+                    methodModel.MemberAccesses.Add(memberAccessModel);
+                }
             }
         }
         
