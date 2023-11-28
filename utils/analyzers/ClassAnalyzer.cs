@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using csharp_to_json_converter.model;
 using Microsoft.CodeAnalysis;
@@ -12,9 +13,11 @@ namespace csharp_to_json_converter.utils.analyzers
         private readonly ConstructorAnalyzer _constructorAnalyzer;
         private readonly FieldAnalyzer _fieldAnalyzer;
         private readonly PropertyAnalyzer _propertyAnalyzer;
+        private readonly DirectoryInfo _inputDirectory;
 
-        internal ClassAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel) : base(syntaxTree, semanticModel)
+        internal ClassAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel, DirectoryInfo inputDirectory) : base(syntaxTree, semanticModel)
         {
+            _inputDirectory = inputDirectory;
             _methodAnalyzer = new MethodAnalyzer(SyntaxTree, SemanticModel);
             _constructorAnalyzer = new ConstructorAnalyzer(SyntaxTree, SemanticModel);
             _fieldAnalyzer = new FieldAnalyzer(SyntaxTree, SemanticModel);
@@ -44,6 +47,7 @@ namespace csharp_to_json_converter.utils.analyzers
                 classModel.Accessibility = namedTypeSymbol.DeclaredAccessibility.ToString();
                 classModel.Abstract = namedTypeSymbol.IsAbstract;
                 classModel.Sealed = namedTypeSymbol.IsSealed;
+                classModel.RelativePath = Path.GetRelativePath(_inputDirectory.FullName, fileModel.AbsolutePath);
                 classModel.Static = namedTypeSymbol.IsStatic;
                 classModel.Partial = classDeclarationSyntax.Modifiers.Any(modifier => modifier.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PartialKeyword));
                 classModel.Md5 = BuildMD5(classDeclarationSyntax.GetText().ToString());

@@ -16,10 +16,10 @@ namespace csharp_to_json_converter.utils.analyzers
             syntaxTree, semanticModel)
         {
             _inputDirectory = inputDirectory;
-            _enumAnalyzer = new EnumAnalyzer(SyntaxTree, SemanticModel);
-            _classAnalyzer = new ClassAnalyzer(SyntaxTree, SemanticModel);
+            _enumAnalyzer = new EnumAnalyzer(SyntaxTree, SemanticModel, _inputDirectory);
+            _classAnalyzer = new ClassAnalyzer(SyntaxTree, SemanticModel, _inputDirectory);
             _usingsAnalyzer = new UsingsAnalyzer(SyntaxTree, SemanticModel);
-            _interfaceAnalyzer = new InterfaceAnalyzer(SyntaxTree, SemanticModel);
+            _interfaceAnalyzer = new InterfaceAnalyzer(SyntaxTree, SemanticModel, _inputDirectory);
         }
 
         internal FileModel Analyze(FileInfo fileInfo)

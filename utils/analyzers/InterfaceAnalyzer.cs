@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using csharp_to_json_converter.model;
 using Microsoft.CodeAnalysis;
@@ -9,10 +10,12 @@ namespace csharp_to_json_converter.utils.analyzers
     public class InterfaceAnalyzer : AbstractAnalyzer
     {
         private readonly ConstructorAnalyzer _constructorAnalyzer;
+        private readonly DirectoryInfo _inputDirectory;
 
-        internal InterfaceAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel) : base(syntaxTree, semanticModel)
+        internal InterfaceAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel, DirectoryInfo inputDirectory) : base(syntaxTree, semanticModel)
         {
             _constructorAnalyzer = new ConstructorAnalyzer(SyntaxTree, SemanticModel);
+            _inputDirectory = inputDirectory;
         }
 
         internal void Analyze(FileModel fileModel)
@@ -41,10 +44,9 @@ namespace csharp_to_json_converter.utils.analyzers
                 }
 
                 interfaceModel.Accessibility = namedTypeSymbol.DeclaredAccessibility.ToString();
-                interfaceModel.FirstLineNumber =
-                    interfaceDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
-                interfaceModel.LastLineNumber =
-                    interfaceDeclarationSyntax.GetLocation().GetLineSpan().EndLinePosition.Line + 1;
+                interfaceModel.relativePath = Path.GetRelativePath(_inputDirectory.FullName, fileModel.AbsolutePath);
+                interfaceModel.FirstLineNumber = interfaceDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                interfaceModel.LastLineNumber = interfaceDeclarationSyntax.GetLocation().GetLineSpan().EndLinePosition.Line + 1;
 
                 _constructorAnalyzer.Analyze(interfaceDeclarationSyntax, interfaceModel);
 

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using csharp_to_json_converter.model;
 using Microsoft.CodeAnalysis;
@@ -10,9 +11,11 @@ namespace csharp_to_json_converter.utils.analyzers
     public class EnumAnalyzer : AbstractAnalyzer
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private readonly DirectoryInfo _inputDirectory;
 
-        internal EnumAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel) : base(syntaxTree, semanticModel)
+        internal EnumAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel, DirectoryInfo inputDirectory) : base(syntaxTree, semanticModel)
         {
+            _inputDirectory = inputDirectory;
         }
 
         internal void Analyze(FileModel fileModel)
@@ -38,6 +41,7 @@ namespace csharp_to_json_converter.utils.analyzers
 
                 enumModel.Fqn = namedTypeSymbol.ToString();
                 enumModel.Name = namedTypeSymbol.Name;
+                enumModel.RelativePath = Path.GetRelativePath(_inputDirectory.FullName, fileModel.AbsolutePath);
                 enumModel.Md5 = BuildMD5(enumDeclarationSyntax.GetText().ToString());
                 enumModel.FirstLineNumber =
                     enumDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
