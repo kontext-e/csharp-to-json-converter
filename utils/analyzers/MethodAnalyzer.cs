@@ -36,9 +36,9 @@ namespace csharp_to_json_converter.utils.analyzers
 
                 if (methodSymbol != null && !methodSymbol.IsAbstract)
                 {
-                    ControlFlowGraph controlFlowGraph = ControlFlowGraph
-                        .Create(methodDeclarationSyntax, SemanticModel, CancellationToken.None);
-
+                    ControlFlowGraph controlFlowGraph = ControlFlowGraph.Create(methodDeclarationSyntax, SemanticModel, CancellationToken.None);
+                    methodModel.IsImplementation = controlFlowGraph is not null;
+                    
                     //TODO Fix Problem, where record is seen as Method if record is nested and uses "record ()" Constructor
                     if (controlFlowGraph != null)
                     {
@@ -71,10 +71,8 @@ namespace csharp_to_json_converter.utils.analyzers
                 methodModel.Extern = methodSymbol.IsExtern;
                 methodModel.Accessibility = methodSymbol.DeclaredAccessibility.ToString();
                 methodModel.ReturnType = methodSymbol.ReturnType.ToString();
-                methodModel.FirstLineNumber =
-                    methodDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
-                methodModel.LastLineNumber =
-                    methodDeclarationSyntax.GetLocation().GetLineSpan().EndLinePosition.Line + 1;
+                methodModel.FirstLineNumber = methodDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                methodModel.LastLineNumber = methodDeclarationSyntax.GetLocation().GetLineSpan().EndLinePosition.Line + 1;
 
                 _invocationAnalyzer.Analyze(methodDeclarationSyntax, methodModel);
                 _parameterAnalyzer.Analyze(methodDeclarationSyntax, methodModel);

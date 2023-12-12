@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using csharp_to_json_converter.model;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using IdentifierNameSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.IdentifierNameSyntax;
 using InvocationExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.InvocationExpressionSyntax;
 using MemberAccessExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.MemberAccessExpressionSyntax;
@@ -42,14 +40,6 @@ namespace csharp_to_json_converter.utils.analyzers
             foreach (MemberAccessExpressionSyntax memberAccessExpressionSyntax in memberAccessExpressionSyntaxes)
             {
                 var symbolInfo = SemanticModel.GetSymbolInfo(memberAccessExpressionSyntax);
-                var memberAccessModel = new MemberAccessModel
-                {
-                    LineNumber = memberAccessExpressionSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
-                    MemberId = symbolInfo.Symbol?.ToString()
-                };
-                methodModel.MemberAccesses.Add(memberAccessModel);
-            }
-        }
                 var symbol = symbolInfo.Symbol?.ToString();
 
                 if (!invocations.Contains(symbol))
@@ -67,26 +57,18 @@ namespace csharp_to_json_converter.utils.analyzers
         private void ProcessInvocations(IEnumerable<InvocationExpressionSyntax> memberAccessExpressionSyntaxes,
             MethodModel methodModel)
         {
-            foreach (InvocationExpressionSyntax memberAccesses in memberAccessExpressionSyntaxes)
+            foreach (var memberAccesses in memberAccessExpressionSyntaxes)
             {
                 IMethodSymbol methodSymbol = null;
 
-                MemberAccessExpressionSyntax memberAccessExpressionSyntax =
-                    memberAccesses.Expression as MemberAccessExpressionSyntax;
-
-                IdentifierNameSyntax identifierNameSyntax =
-                    memberAccesses.Expression as IdentifierNameSyntax;
-
-                if (memberAccessExpressionSyntax != null)
-                {
+                if (memberAccesses.Expression is MemberAccessExpressionSyntax memberAccessExpressionSyntax) {
                     methodSymbol = SemanticModel.GetSymbolInfo(memberAccessExpressionSyntax).Symbol as IMethodSymbol;
-                }
-                else if (identifierNameSyntax != null)
-                {
+                } 
+                else if (memberAccesses.Expression is IdentifierNameSyntax identifierNameSyntax) {
                     methodSymbol = SemanticModel.GetSymbolInfo(identifierNameSyntax).Symbol as IMethodSymbol;
                 }
 
-                InvocationModel invokesModel = new InvocationModel()
+                var invokesModel = new InvocationModel()
                 {
                     LineNumber = memberAccesses.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
                     MethodId = methodSymbol?.ToString()
