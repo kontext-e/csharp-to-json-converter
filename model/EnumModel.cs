@@ -8,11 +8,6 @@ namespace csharp_to_json_converter.model
         public string Fqn { get; set; }
         public string Md5 { get; set; }
         public string RelativePath { get; set; }
-        public List<EnumMemberModel> Members { get; set; }
-
-        public EnumModel()
-        {
-            Members = new List<EnumMemberModel>();
-        }
+        public List<EnumMemberModel> Members { get; set; } = new();
     }
 }

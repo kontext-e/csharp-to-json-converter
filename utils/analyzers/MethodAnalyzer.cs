@@ -19,9 +19,9 @@ namespace csharp_to_json_converter.utils.analyzers
             _parameterAnalyzer = new ParameterAnalyzer(SyntaxTree, SemanticModel);
         }
 
-        public void Analyze(ClassDeclarationSyntax classDeclarationSyntax, ClassModel classModel)
+        public void Analyze(TypeDeclarationSyntax typeDeclarationSyntax, ClassLikeModel classLikeModel)
         {
-            List<MethodDeclarationSyntax> methodDeclarationSyntaxes = classDeclarationSyntax
+            List<MethodDeclarationSyntax> methodDeclarationSyntaxes = typeDeclarationSyntax
                 .DescendantNodes()
                 .OfType<MethodDeclarationSyntax>()
                 .ToList();
@@ -77,7 +77,7 @@ namespace csharp_to_json_converter.utils.analyzers
                 _invocationAnalyzer.Analyze(methodDeclarationSyntax, methodModel);
                 _parameterAnalyzer.Analyze(methodDeclarationSyntax, methodModel);
 
-                classModel.Methods.Add(methodModel);
+                classLikeModel.Methods.Add(methodModel);
             }
         }
     }

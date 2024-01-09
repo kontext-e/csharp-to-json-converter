@@ -34,27 +34,26 @@ namespace csharp_to_json_converter.utils.analyzers
 
             foreach (ClassDeclarationSyntax classDeclarationSyntax in classDeclarationSyntaxes)
             {
-                ClassModel classModel = new ClassModel
-                {
-                    Name = classDeclarationSyntax.Identifier.ValueText,
-                    Fqn = SemanticModel.GetDeclaredSymbol(classDeclarationSyntax).ToString()
-                };
-
                 INamedTypeSymbol namedTypeSymbol =
                     SemanticModel.GetDeclaredSymbol(classDeclarationSyntax) as INamedTypeSymbol;
+                if (namedTypeSymbol == null) { continue; }
 
-                classModel.BaseType = namedTypeSymbol.BaseType.ToString();
-                classModel.Accessibility = namedTypeSymbol.DeclaredAccessibility.ToString();
-                classModel.Abstract = namedTypeSymbol.IsAbstract;
-                classModel.Sealed = namedTypeSymbol.IsSealed;
-                classModel.RelativePath = Path.GetRelativePath(_inputDirectory.FullName, fileModel.AbsolutePath);
-                classModel.Static = namedTypeSymbol.IsStatic;
-                classModel.Partial = classDeclarationSyntax.Modifiers.Any(modifier => modifier.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PartialKeyword));
-                classModel.Md5 = BuildMD5(classDeclarationSyntax.GetText().ToString());
-                classModel.FirstLineNumber =
-                    classDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
-                classModel.LastLineNumber =
-                    classDeclarationSyntax.GetLocation().GetLineSpan().EndLinePosition.Line + 1;
+                var classModel = new ClassModel
+                {
+                    Name = classDeclarationSyntax.Identifier.ValueText,
+                    Fqn = SemanticModel.GetDeclaredSymbol(classDeclarationSyntax).ToString(),
+                    BaseType = namedTypeSymbol.BaseType?.ToString(),
+                    Accessibility = namedTypeSymbol.DeclaredAccessibility.ToString(),
+                    Abstract = namedTypeSymbol.IsAbstract,
+                    Sealed = namedTypeSymbol.IsSealed,
+                    RelativePath = Path.GetRelativePath(_inputDirectory.FullName, fileModel.AbsolutePath),
+                    Static = namedTypeSymbol.IsStatic,
+                    Partial = classDeclarationSyntax.Modifiers.Any(modifier => modifier.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PartialKeyword)),
+                    Md5 = BuildMD5(classDeclarationSyntax.GetText().ToString()),
+                    FirstLineNumber = classDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
+                    LastLineNumber = classDeclarationSyntax.GetLocation().GetLineSpan().EndLinePosition.Line + 1
+                };
+
 
                 foreach (INamedTypeSymbol interfaceTypeSymbol in namedTypeSymbol.Interfaces)
                 {

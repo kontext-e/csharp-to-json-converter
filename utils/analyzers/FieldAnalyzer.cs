@@ -12,37 +12,33 @@ namespace csharp_to_json_converter.utils.analyzers
         {
         }
 
-        public void Analyze(ClassDeclarationSyntax classDeclarationSyntax, ClassModel classModel)
+        public void Analyze(TypeDeclarationSyntax typeDeclarationSyntax, ClassLikeModel classLikeModel)
         {
-            List<FieldDeclarationSyntax> fieldDeclarationSyntaxes = classDeclarationSyntax
+            List<FieldDeclarationSyntax> fieldDeclarationSyntaxes = typeDeclarationSyntax
                 .DescendantNodes()
                 .OfType<FieldDeclarationSyntax>()
                 .ToList();
 
             foreach (FieldDeclarationSyntax fieldDeclarationSyntax in fieldDeclarationSyntaxes)
             {
-                foreach (VariableDeclaratorSyntax variableDeclaratorSyntax in fieldDeclarationSyntax.Declaration
-                    .Variables)
+                foreach (VariableDeclaratorSyntax variableDeclaratorSyntax in fieldDeclarationSyntax.Declaration.Variables)
                 {
-                    IFieldSymbol fieldSymbol =
-                        SemanticModel.GetDeclaredSymbol(variableDeclaratorSyntax) as IFieldSymbol;
+                    IFieldSymbol fieldSymbol = SemanticModel.GetDeclaredSymbol(variableDeclaratorSyntax) as IFieldSymbol;
+                    if (fieldSymbol == null) { continue; }
 
-                    if (fieldSymbol == null)
+                    var fieldModel = new FieldModel
                     {
-                        continue;
-                    }
-
-                    FieldModel fieldModel = new FieldModel();
-                    fieldModel.Name = fieldSymbol.Name;
-                    fieldModel.Fqn = fieldSymbol.ToString();
-                    fieldModel.Type = fieldSymbol.Type.ToString();
-                    fieldModel.Static = fieldSymbol.IsStatic;
-                    fieldModel.Abstract = fieldSymbol.IsAbstract;
-                    fieldModel.Sealed = fieldSymbol.IsSealed;
-                    fieldModel.Override = fieldSymbol.IsOverride;
-                    fieldModel.Virtual = fieldSymbol.IsVirtual;
-                    fieldModel.Const = fieldSymbol.IsConst;
-                    fieldModel.Volatile = fieldSymbol.IsVolatile;
+                        Name = fieldSymbol.Name,
+                        Fqn = fieldSymbol.ToString(),
+                        Type = fieldSymbol.Type.ToString(),
+                        Static = fieldSymbol.IsStatic,
+                        Abstract = fieldSymbol.IsAbstract,
+                        Sealed = fieldSymbol.IsSealed,
+                        Override = fieldSymbol.IsOverride,
+                        Virtual = fieldSymbol.IsVirtual,
+                        Const = fieldSymbol.IsConst,
+                        Volatile = fieldSymbol.IsVolatile
+                    };
 
                     if (fieldSymbol.HasConstantValue)
                     {
@@ -50,7 +46,7 @@ namespace csharp_to_json_converter.utils.analyzers
                     }
 
                     fieldModel.Accessibility = fieldSymbol.DeclaredAccessibility.ToString();
-                    classModel.Fields.Add(fieldModel);
+                    classLikeModel.Fields.Add(fieldModel);
                 }
             }
         }

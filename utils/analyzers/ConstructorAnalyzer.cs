@@ -24,6 +24,12 @@ namespace csharp_to_json_converter.utils.analyzers
             classModel.Constructors.AddRange(constructorModels);
         }
 
+        public void Analyze(TypeDeclarationSyntax interfaceDeclarationSyntax, ClassLikeModel interfaceModel)
+        {
+            List<ConstructorModel> constructorModels = FindContructors(interfaceDeclarationSyntax);
+            interfaceModel.Constructors.AddRange(constructorModels);
+        }
+
         private List<ConstructorModel> FindContructors(SyntaxNode syntaxNode)
         {
             List<ConstructorDeclarationSyntax> constructorDeclarationSyntaxes = syntaxNode
@@ -35,25 +41,23 @@ namespace csharp_to_json_converter.utils.analyzers
 
             foreach (ConstructorDeclarationSyntax constructorDeclarationSyntax in constructorDeclarationSyntaxes)
             {
-                ConstructorModel constructorModel = new ConstructorModel();
-
-                constructorModel.Name = constructorDeclarationSyntax.Identifier.Text;
-
-                IMethodSymbol methodSymbol =
-                    SemanticModel.GetDeclaredSymbol(constructorDeclarationSyntax) as IMethodSymbol;
-
-                constructorModel.Fqn = methodSymbol.ToString();
-                constructorModel.Static = methodSymbol.IsStatic;
-                constructorModel.Abstract = methodSymbol.IsAbstract;
-                constructorModel.Sealed = methodSymbol.IsSealed;
-                constructorModel.Async = methodSymbol.IsAsync;
-                constructorModel.Override = methodSymbol.IsOverride;
-                constructorModel.Virtual = methodSymbol.IsVirtual;
-                constructorModel.Accessibility = methodSymbol.DeclaredAccessibility.ToString();
-                constructorModel.FirstLineNumber =
-                    constructorDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
-                constructorModel.LastLineNumber =
-                    constructorDeclarationSyntax.GetLocation().GetLineSpan().EndLinePosition.Line + 1;
+                IMethodSymbol methodSymbol = SemanticModel.GetDeclaredSymbol(constructorDeclarationSyntax) as IMethodSymbol;
+                if (methodSymbol == null) { continue; }
+                
+                ConstructorModel constructorModel = new ConstructorModel
+                {
+                    Name = constructorDeclarationSyntax.Identifier.Text,
+                    Fqn = methodSymbol.ToString(),
+                    Static = methodSymbol.IsStatic,
+                    Abstract = methodSymbol.IsAbstract,
+                    Sealed = methodSymbol.IsSealed,
+                    Async = methodSymbol.IsAsync,
+                    Override = methodSymbol.IsOverride,
+                    Virtual = methodSymbol.IsVirtual,
+                    Accessibility = methodSymbol.DeclaredAccessibility.ToString(),
+                    FirstLineNumber = constructorDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
+                    LastLineNumber = constructorDeclarationSyntax.GetLocation().GetLineSpan().EndLinePosition.Line + 1
+                };
 
                 _invocationAnalyzer.Analyze(constructorDeclarationSyntax, constructorModel);
                 _parameterAnalyzer.Analyze(constructorDeclarationSyntax, constructorModel);
@@ -62,12 +66,6 @@ namespace csharp_to_json_converter.utils.analyzers
             }
 
             return result;
-        }
-
-        public void Analyze(InterfaceDeclarationSyntax interfaceDeclarationSyntax, InterfaceModel interfaceModel)
-        {
-            List<ConstructorModel> constructorModels = FindContructors(interfaceDeclarationSyntax);
-            interfaceModel.Constructors.AddRange(constructorModels);
         }
     }
 }
