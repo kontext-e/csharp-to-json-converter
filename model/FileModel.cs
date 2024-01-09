@@ -11,8 +11,8 @@ namespace csharp_to_json_converter.model
         public List<UsingModel> Usings { get; set; }
         public List<EnumModel> Enums { get; set; }
         public List<InterfaceModel> Interfaces { get; set; }
-        
         public List<StructModel> Structs { get; set; }
+        public List<RecordModel> Records { get; set; } = new();
 
         internal FileModel()
         {

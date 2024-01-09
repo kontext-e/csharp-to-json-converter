@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using csharp_to_json_converter.model;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using IdentifierNameSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.IdentifierNameSyntax;
 using InvocationExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.InvocationExpressionSyntax;
 using MemberAccessExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.MemberAccessExpressionSyntax;
@@ -32,25 +34,25 @@ namespace csharp_to_json_converter.utils.analyzers
             ProcessMemberAccesses(memberAccessExpressionSyntaxes, methodModel);
         }
 
-        private void ProcessMemberAccesses(IEnumerable<MemberAccessExpressionSyntax> memberAccessExpressionSyntaxes,
-            MethodModel methodModel)
+        private void ProcessMemberAccesses(IEnumerable<MemberAccessExpressionSyntax> memberAccessExpressionSyntaxes, MethodModel methodModel)
         {
             var invocations = methodModel.Invocations.ToList().Select(invocation => invocation.MethodId).ToList();
             
-            foreach (MemberAccessExpressionSyntax memberAccessExpressionSyntax in memberAccessExpressionSyntaxes)
+            foreach (var memberAccessExpressionSyntax in memberAccessExpressionSyntaxes)
             {
                 var symbolInfo = SemanticModel.GetSymbolInfo(memberAccessExpressionSyntax);
                 var symbol = symbolInfo.Symbol?.ToString();
+                
+                //Subtract known Method invocations from memberAccesses. Field Accesses are implicitly filtered out in Java Part of this Plugin
+                if (invocations.Contains(symbol)) continue;
 
-                if (!invocations.Contains(symbol))
+                var memberAccessModel = new MemberAccessModel()
                 {
-                    var memberAccessModel = new MemberAccessModel()
-                    {
-                        LineNumber = memberAccessExpressionSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
-                        MemberId = symbol
-                    };
-                    methodModel.MemberAccesses.Add(memberAccessModel);
-                }
+                    LineNumber = memberAccessExpressionSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
+                    MemberId = symbol
+                };
+                
+                methodModel.MemberAccesses.Add(memberAccessModel);
             }
         }
         

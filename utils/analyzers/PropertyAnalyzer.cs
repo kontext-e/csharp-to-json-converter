@@ -11,9 +11,9 @@ namespace csharp_to_json_converter.utils.analyzers
         {
         }
 
-        public void Analyze(ClassDeclarationSyntax classDeclarationSyntax, ClassModel classModel)
+        public void Analyze(TypeDeclarationSyntax typeDeclarationSyntax, ClassLikeModel classLikeModel)
         {
-            var propertyDeclarationSyntaxes = classDeclarationSyntax
+            var propertyDeclarationSyntaxes = typeDeclarationSyntax
                 .DescendantNodes()
                 .OfType<PropertyDeclarationSyntax>()
                 .ToList();
@@ -48,7 +48,7 @@ namespace csharp_to_json_converter.utils.analyzers
                     propertyModel.Accessors.Add("get");
                 }
 
-                classModel.Properties.Add(propertyModel);
+                classLikeModel.Properties.Add(propertyModel);
             }
         }
     }
