@@ -41,7 +41,7 @@ namespace csharp_to_json_converter.utils.analyzers
                 var classModel = new ClassModel
                 {
                     Name = classDeclarationSyntax.Identifier.ValueText,
-                    Fqn = SemanticModel.GetDeclaredSymbol(classDeclarationSyntax).ToString(),
+                    Fqn = SemanticModel.GetDeclaredSymbol(classDeclarationSyntax)?.ToString(),
                     BaseType = namedTypeSymbol.BaseType?.ToString(),
                     Accessibility = namedTypeSymbol.DeclaredAccessibility.ToString(),
                     Abstract = namedTypeSymbol.IsAbstract,
