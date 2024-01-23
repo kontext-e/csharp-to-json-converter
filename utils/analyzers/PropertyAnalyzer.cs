@@ -2,6 +2,7 @@
 using csharp_to_json_converter.model;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
 
 namespace csharp_to_json_converter.utils.analyzers
 {
@@ -11,7 +12,7 @@ namespace csharp_to_json_converter.utils.analyzers
         {
         }
 
-        public void Analyze(TypeDeclarationSyntax typeDeclarationSyntax, ClassLikeModel classLikeModel)
+        public void Analyze(TypeDeclarationSyntax typeDeclarationSyntax, MemberOwningModel memberOwningModel)
         {
             var propertyDeclarationSyntaxes = typeDeclarationSyntax
                 .DescendantNodes()
@@ -38,12 +39,13 @@ namespace csharp_to_json_converter.utils.analyzers
 
                 if (propertyDeclaration.AccessorList is not null)
                 {
-                    foreach (var accessor in propertyDeclaration.AccessorList.Accessors)
+                    foreach (AccessorDeclarationSyntax accessor in propertyDeclaration.AccessorList.Accessors)
                     {
+                        var methodSymbol = CSharpExtensions.GetDeclaredSymbol(SemanticModel, accessor) as IMethodSymbol;
                         propertyModel.Accessors.Add(new PropertyAccessorModel
                         {
                             Kind = accessor.Keyword.ToString(),
-                            Accessibility = accessor.Modifiers.Count == 0 ? propertySymbol.DeclaredAccessibility.ToString() : accessor.Modifiers.ToString()
+                            Accessibility = accessor.Modifiers.Count == 0 ? propertySymbol.DeclaredAccessibility.ToString() : methodSymbol.DeclaredAccessibility.ToString()
                         });
                     }
                 }
@@ -51,12 +53,12 @@ namespace csharp_to_json_converter.utils.analyzers
                 {
                     propertyModel.Accessors.Add(new PropertyAccessorModel
                         { 
-                            Accessibility = propertyDeclaration.Modifiers.ToString(), 
+                            Accessibility = propertySymbol.DeclaredAccessibility.ToString(), 
                             Kind = "get"
                         });
                 }
 
-                classLikeModel.Properties.Add(propertyModel);
+                memberOwningModel.Properties.Add(propertyModel);
             }
         }
     }

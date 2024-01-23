@@ -1,8 +1,6 @@
-﻿using System.Collections.Generic;
-
-namespace csharp_to_json_converter.model
+﻿namespace csharp_to_json_converter.model
 {
-    public class ClassModel: ClassLikeModel
+    public class ClassModel: MemberOwningModel
     {
         public bool Abstract { get; set; }
         public string BaseType { get; set; }

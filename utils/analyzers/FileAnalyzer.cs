@@ -12,7 +12,6 @@ namespace csharp_to_json_converter.utils.analyzers
         private readonly InterfaceAnalyzer _interfaceAnalyzer;
         private readonly DirectoryInfo _inputDirectory;
         private readonly StructAnalyzer _structAnalyzer;
-        private readonly RecordAnalyzer _recordAnalyzer;
 
         public FileAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel, DirectoryInfo inputDirectory) : base(
             syntaxTree, semanticModel)
@@ -23,7 +22,6 @@ namespace csharp_to_json_converter.utils.analyzers
             _usingsAnalyzer = new UsingsAnalyzer(SyntaxTree, SemanticModel);
             _interfaceAnalyzer = new InterfaceAnalyzer(SyntaxTree, SemanticModel, _inputDirectory);
             _structAnalyzer = new StructAnalyzer(SyntaxTree, SemanticModel, _inputDirectory);
-            _recordAnalyzer = new RecordAnalyzer(SyntaxTree, SemanticModel, _inputDirectory);
         }
 
         internal FileModel Analyze(FileInfo fileInfo)
@@ -38,7 +36,6 @@ namespace csharp_to_json_converter.utils.analyzers
             _classAnalyzer.Analyze(fileModel);
             _structAnalyzer.Analyze(fileModel);
             _usingsAnalyzer.Analyze(fileModel);
-            _recordAnalyzer.Analyze(fileModel);
 
             return fileModel;
         }

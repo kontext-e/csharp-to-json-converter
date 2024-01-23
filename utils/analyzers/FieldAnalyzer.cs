@@ -12,7 +12,7 @@ namespace csharp_to_json_converter.utils.analyzers
         {
         }
 
-        public void Analyze(TypeDeclarationSyntax typeDeclarationSyntax, ClassLikeModel classLikeModel)
+        public void Analyze(TypeDeclarationSyntax typeDeclarationSyntax, MemberOwningModel memberOwningModel)
         {
             List<FieldDeclarationSyntax> fieldDeclarationSyntaxes = typeDeclarationSyntax
                 .DescendantNodes()
@@ -46,7 +46,7 @@ namespace csharp_to_json_converter.utils.analyzers
                     }
 
                     fieldModel.Accessibility = fieldSymbol.DeclaredAccessibility.ToString();
-                    classLikeModel.Fields.Add(fieldModel);
+                    memberOwningModel.Fields.Add(fieldModel);
                 }
             }
         }

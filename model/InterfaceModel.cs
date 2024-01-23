@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace csharp_to_json_converter.model
 {
-    public class InterfaceModel: ClassLikeModel
+    public class InterfaceModel: MemberOwningModel
     {
         // In Roslyn interface methods are "ConstructorDeclaration" nodes.
         // Internally we call them this way, but we do not want to communicate this to the outside.

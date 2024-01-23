@@ -2,7 +2,7 @@
 
 namespace csharp_to_json_converter.model
 {
-    public abstract class ClassLikeModel : AccessModifierModel
+    public abstract class MemberOwningModel : AccessModifierModel
     {
         public string Name { get; set; }
         public string Fqn { get; set; }

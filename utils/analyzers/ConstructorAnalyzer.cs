@@ -24,7 +24,7 @@ namespace csharp_to_json_converter.utils.analyzers
             classModel.Constructors.AddRange(constructorModels);
         }
 
-        public void Analyze(TypeDeclarationSyntax interfaceDeclarationSyntax, ClassLikeModel interfaceModel)
+        public void Analyze(TypeDeclarationSyntax interfaceDeclarationSyntax, MemberOwningModel interfaceModel)
         {
             List<ConstructorModel> constructorModels = FindContructors(interfaceDeclarationSyntax);
             interfaceModel.Constructors.AddRange(constructorModels);

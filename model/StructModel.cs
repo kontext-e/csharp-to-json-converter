@@ -1,9 +1,8 @@
-﻿using System.Collections.Generic;
-
-namespace csharp_to_json_converter.model
+﻿namespace csharp_to_json_converter.model
 {
-    public class StructModel : ClassLikeModel
+    public class StructModel : MemberOwningModel
     {
+        public bool Abstract { get; set; }
         public bool Partial { get; set; }
     }
 }
