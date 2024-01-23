@@ -34,6 +34,7 @@ namespace csharp_to_json_converter.utils.analyzers
                         Static = fieldSymbol.IsStatic,
                         Abstract = fieldSymbol.IsAbstract,
                         Sealed = fieldSymbol.IsSealed,
+                        Required = fieldSymbol.IsRequired,
                         Override = fieldSymbol.IsOverride,
                         Virtual = fieldSymbol.IsVirtual,
                         Const = fieldSymbol.IsConst,

@@ -33,6 +33,7 @@ namespace csharp_to_json_converter.utils.analyzers
                     Static = propertySymbol.IsStatic,
                     Override = propertySymbol.IsOverride,
                     Virtual = propertySymbol.IsVirtual,
+                    Required = propertySymbol.IsRequired,
                     Extern = propertySymbol.IsExtern,
                     Accessibility = propertySymbol.DeclaredAccessibility.ToString().Length == 0 ? "Internal" : propertySymbol.DeclaredAccessibility.ToString()
                 };

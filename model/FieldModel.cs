@@ -8,6 +8,7 @@
         public bool Abstract { get; set; }
         public bool Const { get; set; }
         public bool Volatile { get; set; }
+        public bool Required { get; set; }
         public string ConstantValue { get; set; }
     }
 }
