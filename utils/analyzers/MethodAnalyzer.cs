@@ -56,9 +56,8 @@ namespace csharp_to_json_converter.utils.analyzers
                 if (!methodSymbol.IsAbstract)
                 {
                     var controlFlowGraph = ControlFlowGraph.Create(methodDeclarationSyntax, SemanticModel, CancellationToken.None);
-                    if (controlFlowGraph == null) { continue; }
-
-                    methodModel.IsImplementation = true;
+                    
+                    methodModel.IsImplementation = controlFlowGraph is not null;
                     methodModel.CyclomaticComplexity = CalculateCyclomaticComplexity(controlFlowGraph);
                 }
                 
@@ -71,6 +70,8 @@ namespace csharp_to_json_converter.utils.analyzers
 
         private static int CalculateCyclomaticComplexity(ControlFlowGraph controlFlowGraph)
         {
+            if (controlFlowGraph == null) { return 0; } 
+            
             int numberOfBlocks = controlFlowGraph.Blocks.Length;
             int numberOfEdges = 0;
             foreach (BasicBlock basicBlock in controlFlowGraph.Blocks)
