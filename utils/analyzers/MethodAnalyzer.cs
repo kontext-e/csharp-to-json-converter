@@ -19,7 +19,7 @@ namespace csharp_to_json_converter.utils.analyzers
             _parameterAnalyzer = new ParameterAnalyzer(SyntaxTree, SemanticModel);
         }
 
-        public void Analyze(TypeDeclarationSyntax typeDeclarationSyntax, ClassLikeModel classLikeModel)
+        public void Analyze(TypeDeclarationSyntax typeDeclarationSyntax, MemberOwningModel memberOwningModel)
         {
             List<MethodDeclarationSyntax> methodDeclarationSyntaxes = typeDeclarationSyntax
                 .DescendantNodes()
@@ -28,39 +28,12 @@ namespace csharp_to_json_converter.utils.analyzers
 
             foreach (MethodDeclarationSyntax methodDeclarationSyntax in methodDeclarationSyntaxes)
             {
-                MethodModel methodModel = new MethodModel();
+                var methodModel = new MethodModel();
+                
+                var methodSymbol = ModelExtensions.GetDeclaredSymbol(SemanticModel, methodDeclarationSyntax) as IMethodSymbol;
+                if (methodSymbol == null) { continue; }
 
                 methodModel.Name = methodDeclarationSyntax.Identifier.Text;
-
-                IMethodSymbol methodSymbol = SemanticModel.GetDeclaredSymbol(methodDeclarationSyntax) as IMethodSymbol;
-
-                if (methodSymbol != null && !methodSymbol.IsAbstract)
-                {
-                    ControlFlowGraph controlFlowGraph = ControlFlowGraph.Create(methodDeclarationSyntax, SemanticModel, CancellationToken.None);
-                    methodModel.IsImplementation = controlFlowGraph is not null;
-                    
-                    //TODO Fix Problem, where record is seen as Method if record is nested and uses "record ()" Constructor
-                    if (controlFlowGraph != null)
-                    {
-                        int numberOfBlocks = controlFlowGraph.Blocks.Length;
-                        int numberOfEdges = 0;
-                        foreach (BasicBlock basicBlock in controlFlowGraph.Blocks)
-                        {
-                            if (basicBlock.ConditionalSuccessor != null)
-                            {
-                                numberOfEdges++;
-                            }
-
-                            if (basicBlock.FallThroughSuccessor != null)
-                            {
-                                numberOfEdges++;
-                            }
-                        }
-
-                        methodModel.CyclomaticComplexity = numberOfEdges - numberOfBlocks + 2;
-                    }
-                }
-
                 methodModel.Fqn = methodSymbol.ToString();
                 methodModel.Static = methodSymbol.IsStatic;
                 methodModel.Abstract = methodSymbol.IsAbstract;
@@ -73,12 +46,55 @@ namespace csharp_to_json_converter.utils.analyzers
                 methodModel.ReturnType = methodSymbol.ReturnType.ToString();
                 methodModel.FirstLineNumber = methodDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
                 methodModel.LastLineNumber = methodDeclarationSyntax.GetLocation().GetLineSpan().EndLinePosition.Line + 1;
+                
+                if (IsExtensionMethod(methodDeclarationSyntax)) 
+                {
+                    methodModel.IsExtensionMethod = true;
+                    methodModel.ExtendsType = methodSymbol.Parameters[0].Type.ToString();
+                }
+                
+                if (!methodSymbol.IsAbstract)
+                {
+                    var controlFlowGraph = ControlFlowGraph.Create(methodDeclarationSyntax, SemanticModel, CancellationToken.None);
+                    if (controlFlowGraph == null) { continue; }
 
+                    methodModel.IsImplementation = true;
+                    methodModel.CyclomaticComplexity = CalculateCyclomaticComplexity(controlFlowGraph);
+                }
+                
                 _invocationAnalyzer.Analyze(methodDeclarationSyntax, methodModel);
                 _parameterAnalyzer.Analyze(methodDeclarationSyntax, methodModel);
 
-                classLikeModel.Methods.Add(methodModel);
+                memberOwningModel.Methods.Add(methodModel);
             }
+        }
+
+        private static int CalculateCyclomaticComplexity(ControlFlowGraph controlFlowGraph)
+        {
+            int numberOfBlocks = controlFlowGraph.Blocks.Length;
+            int numberOfEdges = 0;
+            foreach (BasicBlock basicBlock in controlFlowGraph.Blocks)
+            {
+                if (basicBlock.ConditionalSuccessor != null)
+                {
+                    numberOfEdges++;
+                }
+
+                if (basicBlock.FallThroughSuccessor != null)
+                {
+                    numberOfEdges++;
+                }
+            }
+            return numberOfEdges - numberOfBlocks + 2;
+        }
+
+        private static bool IsExtensionMethod(MethodDeclarationSyntax methodDeclarationSyntax)
+        {
+            if (methodDeclarationSyntax.ParameterList.Parameters.Count == 0) { return false; }
+            
+            //this Keyword to signal extension Method must be on the first Parameter
+            var firstParameter = methodDeclarationSyntax.ParameterList.Parameters[0];
+            return firstParameter.Modifiers.ToString().Contains("this");
         }
     }
 }
