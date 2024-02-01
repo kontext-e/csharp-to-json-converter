@@ -48,6 +48,7 @@ namespace csharp_to_json_converter.utils.analyzers
                 {
                     Name = constructorDeclarationSyntax.Identifier.Text,
                     Fqn = methodSymbol.ToString(),
+                    ReturnType = methodSymbol.ContainingType.ToString(),
                     Static = methodSymbol.IsStatic,
                     Abstract = methodSymbol.IsAbstract,
                     Sealed = methodSymbol.IsSealed,

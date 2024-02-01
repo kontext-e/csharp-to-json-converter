@@ -42,7 +42,7 @@ namespace csharp_to_json_converter.utils.analyzers
                 {
                     foreach (AccessorDeclarationSyntax accessor in propertyDeclaration.AccessorList.Accessors)
                     {
-                        var methodSymbol = CSharpExtensions.GetDeclaredSymbol(SemanticModel, accessor) as IMethodSymbol;
+                        var methodSymbol = CSharpExtensions.GetDeclaredSymbol(SemanticModel, accessor);
                         propertyModel.Accessors.Add(new PropertyAccessorModel
                         {
                             Kind = accessor.Keyword.ToString(),

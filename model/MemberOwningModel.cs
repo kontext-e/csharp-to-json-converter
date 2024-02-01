@@ -4,6 +4,8 @@ namespace csharp_to_json_converter.model
 {
     public abstract class MemberOwningModel : AccessModifierModel
     {
+        public bool Partial { get; set; }
+        
         public string Name { get; set; }
         public string Fqn { get; set; }
         public string RelativePath { get; set; }

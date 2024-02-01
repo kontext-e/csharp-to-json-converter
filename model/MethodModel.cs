@@ -7,6 +7,7 @@ namespace csharp_to_json_converter.model
         public string Name { get; set; }
         public string Fqn { get; set; }
         public bool Abstract { get; set; }
+        public bool Partial { get; set; }
         public string ReturnType { get; set; }
         public int CyclomaticComplexity { get; set; }
         public bool IsImplementation { get; set; }

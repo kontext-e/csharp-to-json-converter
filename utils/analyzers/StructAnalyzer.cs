@@ -84,10 +84,11 @@ namespace csharp_to_json_converter.utils.analyzers
             structModel.Sealed = namedTypeSymbol.IsSealed;
             structModel.RelativePath = Path.GetRelativePath(_inputDirectory.FullName, fileModel.AbsolutePath);
             structModel.Static = namedTypeSymbol.IsStatic;
-            structModel.Partial = structDeclaration.Modifiers.Any(modifier => modifier.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PartialKeyword));
+            structModel.Partial = structDeclaration.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.PartialKeyword));
             structModel.Md5 = BuildMD5(structDeclaration.GetText().ToString());
             structModel.FirstLineNumber = structDeclaration.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
             structModel.LastLineNumber = structDeclaration.GetLocation().GetLineSpan().EndLinePosition.Line + 1;
+            structModel.ReadOnly = structDeclaration.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.ReadOnlyKeyword));
         }
     }
 }

@@ -43,10 +43,9 @@ namespace csharp_to_json_converter.utils.analyzers
                 enumModel.Name = namedTypeSymbol.Name;
                 enumModel.RelativePath = Path.GetRelativePath(_inputDirectory.FullName, fileModel.AbsolutePath);
                 enumModel.Md5 = BuildMD5(enumDeclarationSyntax.GetText().ToString());
-                enumModel.FirstLineNumber =
-                    enumDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
-                enumModel.LastLineNumber =
-                    enumDeclarationSyntax.GetLocation().GetLineSpan().EndLinePosition.Line + 1;
+                enumModel.FirstLineNumber = enumDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                enumModel.LastLineNumber = enumDeclarationSyntax.GetLocation().GetLineSpan().EndLinePosition.Line + 1;
+                enumModel.Accessibility = namedTypeSymbol.DeclaredAccessibility.ToString();
 
                 List<EnumMemberDeclarationSyntax> enumMemberDeclarationSyntaxes = enumDeclarationSyntax
                     .DescendantNodes()

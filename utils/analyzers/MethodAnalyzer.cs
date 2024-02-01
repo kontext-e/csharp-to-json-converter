@@ -46,6 +46,8 @@ namespace csharp_to_json_converter.utils.analyzers
                 methodModel.ReturnType = methodSymbol.ReturnType.ToString();
                 methodModel.FirstLineNumber = methodDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
                 methodModel.LastLineNumber = methodDeclarationSyntax.GetLocation().GetLineSpan().EndLinePosition.Line + 1;
+                methodModel.Partial = methodDeclarationSyntax.Modifiers.Any(modifier =>
+                    modifier.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PartialKeyword));
                 
                 if (IsExtensionMethod(methodDeclarationSyntax)) 
                 {

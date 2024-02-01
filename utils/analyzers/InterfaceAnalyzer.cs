@@ -11,10 +11,14 @@ namespace csharp_to_json_converter.utils.analyzers
     {
         private readonly ConstructorAnalyzer _constructorAnalyzer;
         private readonly DirectoryInfo _inputDirectory;
+        private readonly MethodAnalyzer _methodAnalyzer;
+        private readonly PropertyAnalyzer _propertyAnalyzer;
 
         internal InterfaceAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel, DirectoryInfo inputDirectory) : base(syntaxTree, semanticModel)
         {
             _constructorAnalyzer = new ConstructorAnalyzer(SyntaxTree, SemanticModel);
+            _methodAnalyzer = new MethodAnalyzer(SyntaxTree, SemanticModel);
+            _propertyAnalyzer = new PropertyAnalyzer(SyntaxTree, SemanticModel);
             _inputDirectory = inputDirectory;
         }
 
@@ -35,8 +39,7 @@ namespace csharp_to_json_converter.utils.analyzers
                     Md5 = BuildMD5(interfaceDeclarationSyntax.GetText().ToString())
                 };
 
-                INamedTypeSymbol namedTypeSymbol =
-                    SemanticModel.GetDeclaredSymbol(interfaceDeclarationSyntax) as INamedTypeSymbol;
+                INamedTypeSymbol namedTypeSymbol = SemanticModel.GetDeclaredSymbol(interfaceDeclarationSyntax) as INamedTypeSymbol;
                 
                 foreach (INamedTypeSymbol interfaceTypeSymbol in namedTypeSymbol.Interfaces)
                 {
@@ -47,8 +50,11 @@ namespace csharp_to_json_converter.utils.analyzers
                 interfaceModel.RelativePath = Path.GetRelativePath(_inputDirectory.FullName, fileModel.AbsolutePath);
                 interfaceModel.FirstLineNumber = interfaceDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
                 interfaceModel.LastLineNumber = interfaceDeclarationSyntax.GetLocation().GetLineSpan().EndLinePosition.Line + 1;
+                interfaceModel.Partial = interfaceDeclarationSyntax.Modifiers.Any(modifier => modifier.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PartialKeyword));
 
                 _constructorAnalyzer.Analyze(interfaceDeclarationSyntax, interfaceModel);
+                _methodAnalyzer.Analyze(interfaceDeclarationSyntax, interfaceModel);
+                _propertyAnalyzer.Analyze(interfaceDeclarationSyntax, interfaceModel);
 
                 fileModel.Interfaces.Add(interfaceModel);
             }
