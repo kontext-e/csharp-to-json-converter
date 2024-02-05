@@ -1,12 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using csharp_to_json_converter.model;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using IdentifierNameSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.IdentifierNameSyntax;
 using InvocationExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.InvocationExpressionSyntax;
 using MemberAccessExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.MemberAccessExpressionSyntax;
+using ObjectCreationExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ObjectCreationExpressionSyntax;
 
 namespace csharp_to_json_converter.utils.analyzers
 {
@@ -19,19 +18,31 @@ namespace csharp_to_json_converter.utils.analyzers
 
         public void Analyze(SyntaxNode syntaxNode, MethodModel methodModel)
         {
-            List<InvocationExpressionSyntax> invocationExpressionSyntaxes = syntaxNode.
-                DescendantNodes().
-                OfType<InvocationExpressionSyntax>().
-                ToList();
-            
-            ProcessInvocations(invocationExpressionSyntaxes, methodModel);
-            
-            List<MemberAccessExpressionSyntax> memberAccessExpressionSyntaxes = syntaxNode
-                .DescendantNodes()
-                .OfType<MemberAccessExpressionSyntax>()
-                .ToList();
+            var invocationExpressions = syntaxNode.DescendantNodes().OfType<InvocationExpressionSyntax>().ToList();
+            ProcessInvocations(invocationExpressions, methodModel);
 
-            ProcessMemberAccesses(memberAccessExpressionSyntaxes, methodModel);
+            var objectCreationExpressions = syntaxNode.DescendantNodes().OfType<ObjectCreationExpressionSyntax>().ToList();
+            ProcessConstructors(objectCreationExpressions, methodModel);
+            
+            var memberAccesses = syntaxNode.DescendantNodes().OfType<MemberAccessExpressionSyntax>().ToList();
+            ProcessMemberAccesses(memberAccesses, methodModel);
+        }
+
+        private void ProcessConstructors(List<ObjectCreationExpressionSyntax> objectCreations, MethodModel methodModel)
+        {
+            foreach (var objectCreation in objectCreations)
+            {                
+                var symbol = SemanticModel.GetSymbolInfo(objectCreation).Symbol;
+                if (symbol is null) { return; }
+
+                var invocationModel = new InvocationModel
+                {
+                    LineNumber = objectCreation.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
+                    MethodId = symbol.ToString()
+                };
+                
+                methodModel.Invocations.Add(invocationModel);
+            }
         }
 
         private void ProcessMemberAccesses(IEnumerable<MemberAccessExpressionSyntax> memberAccessExpressionSyntaxes, MethodModel methodModel)
