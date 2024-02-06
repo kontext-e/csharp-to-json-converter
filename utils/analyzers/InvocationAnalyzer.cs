@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using csharp_to_json_converter.model;
 using Microsoft.CodeAnalysis;
@@ -24,8 +25,30 @@ namespace csharp_to_json_converter.utils.analyzers
             var objectCreationExpressions = syntaxNode.DescendantNodes().OfType<ObjectCreationExpressionSyntax>().ToList();
             ProcessConstructors(objectCreationExpressions, methodModel);
             
-            var memberAccesses = syntaxNode.DescendantNodes().OfType<MemberAccessExpressionSyntax>().ToList();
-            ProcessMemberAccesses(memberAccesses, methodModel);
+            var identifierNames = syntaxNode.DescendantNodes().OfType<IdentifierNameSyntax>().ToList();
+            ProcessPropertyAccesses(identifierNames, methodModel);
+        }
+
+        private void ProcessPropertyAccesses(List<IdentifierNameSyntax> identifierNames, MethodModel methodModel)
+        {
+            if (methodModel.Name == "InvokeAsync")
+            {
+                Console.WriteLine();
+            }
+            foreach (var nameSyntax in identifierNames)
+            {
+                var symbol = SemanticModel.GetSymbolInfo(nameSyntax).Symbol;
+                if (symbol is null) { continue; }
+                if (symbol.Kind != SymbolKind.Property) { continue; }
+
+                var memberAccess = new MemberAccessModel
+                {
+                    LineNumber = nameSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
+                    MemberId = symbol.ToString()
+                };
+                
+                methodModel.MemberAccesses.Add(memberAccess);
+            }
         }
 
         private void ProcessConstructors(List<ObjectCreationExpressionSyntax> objectCreations, MethodModel methodModel)
@@ -42,28 +65,6 @@ namespace csharp_to_json_converter.utils.analyzers
                 };
                 
                 methodModel.Invocations.Add(invocationModel);
-            }
-        }
-
-        private void ProcessMemberAccesses(IEnumerable<MemberAccessExpressionSyntax> memberAccessExpressionSyntaxes, MethodModel methodModel)
-        {
-            var invocations = methodModel.Invocations.ToList().Select(invocation => invocation.MethodId).ToList();
-            
-            foreach (var memberAccessExpressionSyntax in memberAccessExpressionSyntaxes)
-            {
-                var symbolInfo = SemanticModel.GetSymbolInfo(memberAccessExpressionSyntax);
-                var symbol = symbolInfo.Symbol?.ToString();
-                
-                //Subtract known Method invocations from memberAccesses. Field Accesses are implicitly filtered out in Java Part of this Plugin
-                if (invocations.Contains(symbol)) continue;
-
-                var memberAccessModel = new MemberAccessModel()
-                {
-                    LineNumber = memberAccessExpressionSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
-                    MemberId = symbol
-                };
-                
-                methodModel.MemberAccesses.Add(memberAccessModel);
             }
         }
         
