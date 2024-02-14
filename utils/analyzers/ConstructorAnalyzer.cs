@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using csharp_to_json_converter.model;
 using Microsoft.CodeAnalysis;
@@ -11,8 +12,7 @@ namespace csharp_to_json_converter.utils.analyzers
         private readonly InvocationAnalyzer _invocationAnalyzer;
         private readonly ParameterAnalyzer _parameterAnalyzer;
 
-        internal ConstructorAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel) : base(syntaxTree,
-            semanticModel)
+        internal ConstructorAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel) : base(syntaxTree, semanticModel)
         {
             _invocationAnalyzer = new InvocationAnalyzer(SyntaxTree, SemanticModel);
             _parameterAnalyzer = new ParameterAnalyzer(SyntaxTree, SemanticModel);
@@ -25,8 +25,7 @@ namespace csharp_to_json_converter.utils.analyzers
             AnalyzeForDefaultConstructor(typeDeclarationSyntax, memberOwningModel);
         }
 
-        private void AnalyzeForPrimaryConstructor(TypeDeclarationSyntax typeDeclarationSyntax,
-            MemberOwningModel memberOwningModel)
+        private void AnalyzeForPrimaryConstructor(TypeDeclarationSyntax typeDeclarationSyntax, MemberOwningModel memberOwningModel)
         {
             var parameterSyntaxes = typeDeclarationSyntax.ChildNodes().OfType<ParameterListSyntax>().ToList();
             if (parameterSyntaxes.Count == 0) return;
@@ -54,12 +53,21 @@ namespace csharp_to_json_converter.utils.analyzers
                 .OfType<ConstructorDeclarationSyntax>()
                 .ToList();
             
-            foreach (ConstructorDeclarationSyntax constructorDeclarationSyntax in constructorDeclarationSyntaxes)
+            foreach (var constructorDeclarationSyntax in constructorDeclarationSyntaxes)
             {
-                IMethodSymbol methodSymbol = SemanticModel.GetDeclaredSymbol(constructorDeclarationSyntax) as IMethodSymbol;
-                if (methodSymbol == null) continue;
+                if (SemanticModel.GetDeclaredSymbol(constructorDeclarationSyntax) is not IMethodSymbol methodSymbol) continue;
                 var constructorModel = CreateConstructorModel(constructorDeclarationSyntax, methodSymbol);
 
+                if (constructorDeclarationSyntax.DescendantNodes().OfType<ConstructorInitializerSyntax>().Any())
+                {
+                    var invocationModel = new InvocationModel
+                    {
+                        LineNumber = constructorDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
+                        MethodId = memberOwningModel.Constructors[0].Fqn
+                    };
+                    constructorModel.Invocations.Add(invocationModel);
+                }
+                
                 _invocationAnalyzer.Analyze(constructorDeclarationSyntax, constructorModel);
                 _parameterAnalyzer.Analyze(constructorDeclarationSyntax, constructorModel);
 
