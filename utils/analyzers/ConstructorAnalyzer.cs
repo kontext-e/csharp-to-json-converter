@@ -17,20 +17,38 @@ namespace csharp_to_json_converter.utils.analyzers
             _invocationAnalyzer = new InvocationAnalyzer(SyntaxTree, SemanticModel);
             _parameterAnalyzer = new ParameterAnalyzer(SyntaxTree, SemanticModel);
         }
-
-        public void Analyze(ClassDeclarationSyntax classDeclarationSyntax, ClassModel classModel)
+        
+        public void Analyze(TypeDeclarationSyntax typeDeclarationSyntax, MemberOwningModel memberOwningModel)
         {
-            List<ConstructorModel> constructorModels = FindContructors(classDeclarationSyntax);
-            classModel.Constructors.AddRange(constructorModels);
+            ConstructorModel primaryConstructor = AnalyzeForPrimaryConstructor(typeDeclarationSyntax);
+            memberOwningModel.Constructors.Add(primaryConstructor);
+            List<ConstructorModel> constructorModels = FindConstructors(typeDeclarationSyntax);
+            memberOwningModel.Constructors.AddRange(constructorModels);
         }
 
-        public void Analyze(TypeDeclarationSyntax interfaceDeclarationSyntax, MemberOwningModel interfaceModel)
+        private ConstructorModel AnalyzeForPrimaryConstructor(TypeDeclarationSyntax typeDeclarationSyntax)
         {
-            List<ConstructorModel> constructorModels = FindContructors(interfaceDeclarationSyntax);
-            interfaceModel.Constructors.AddRange(constructorModels);
+            var parameterSyntaxes = typeDeclarationSyntax.ChildNodes().OfType<ParameterListSyntax>().ToList();
+            if (parameterSyntaxes.Count == 0) { return null; }
+            if (SemanticModel.GetDeclaredSymbol(typeDeclarationSyntax) is not INamedTypeSymbol typeSymbol) { return null; }
+            
+            var primaryConstructor = typeSymbol.InstanceConstructors[0];
+            var constructorModel = new ConstructorModel
+            {
+                Fqn = primaryConstructor.ToString(),
+                Name = primaryConstructor.ToString()![(primaryConstructor.ToString().LastIndexOf(".") + 1)..],
+                Parameters = _parameterAnalyzer.CreateParameterModels(parameterSyntaxes[0].Parameters.ToList()),
+                ReturnType = typeSymbol.ToString(),
+                Accessibility = "Public",
+                IsPrimaryConstructor = true,
+                FirstLineNumber = typeDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
+                LastLineNumber = typeDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1
+            };
+
+            return constructorModel;
         }
 
-        private List<ConstructorModel> FindContructors(SyntaxNode syntaxNode)
+        private List<ConstructorModel> FindConstructors(SyntaxNode syntaxNode)
         {
             List<ConstructorDeclarationSyntax> constructorDeclarationSyntaxes = syntaxNode
                 .DescendantNodes()
@@ -55,6 +73,7 @@ namespace csharp_to_json_converter.utils.analyzers
                     Async = methodSymbol.IsAsync,
                     Override = methodSymbol.IsOverride,
                     Virtual = methodSymbol.IsVirtual,
+                    IsPrimaryConstructor = false,
                     Accessibility = methodSymbol.DeclaredAccessibility.ToString(),
                     FirstLineNumber = constructorDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
                     LastLineNumber = constructorDeclarationSyntax.GetLocation().GetLineSpan().EndLinePosition.Line + 1
