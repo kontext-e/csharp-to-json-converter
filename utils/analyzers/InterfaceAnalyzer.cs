@@ -52,7 +52,6 @@ namespace csharp_to_json_converter.utils.analyzers
                 interfaceModel.LastLineNumber = interfaceDeclarationSyntax.GetLocation().GetLineSpan().EndLinePosition.Line + 1;
                 interfaceModel.Partial = interfaceDeclarationSyntax.Modifiers.Any(modifier => modifier.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PartialKeyword));
 
-                _constructorAnalyzer.Analyze(interfaceDeclarationSyntax, interfaceModel);
                 _methodAnalyzer.Analyze(interfaceDeclarationSyntax, interfaceModel);
                 _propertyAnalyzer.Analyze(interfaceDeclarationSyntax, interfaceModel);
 

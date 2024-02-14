@@ -20,17 +20,17 @@ namespace csharp_to_json_converter.utils.analyzers
         
         public void Analyze(TypeDeclarationSyntax typeDeclarationSyntax, MemberOwningModel memberOwningModel)
         {
-            ConstructorModel primaryConstructor = AnalyzeForPrimaryConstructor(typeDeclarationSyntax);
-            memberOwningModel.Constructors.Add(primaryConstructor);
-            List<ConstructorModel> constructorModels = FindConstructors(typeDeclarationSyntax);
-            memberOwningModel.Constructors.AddRange(constructorModels);
+            AnalyzeForPrimaryConstructor(typeDeclarationSyntax, memberOwningModel);
+            AnalyzeExplicitConstructors(typeDeclarationSyntax, memberOwningModel);
+            AnalyzeForDefaultConstructor(typeDeclarationSyntax, memberOwningModel);
         }
 
-        private ConstructorModel AnalyzeForPrimaryConstructor(TypeDeclarationSyntax typeDeclarationSyntax)
+        private void AnalyzeForPrimaryConstructor(TypeDeclarationSyntax typeDeclarationSyntax,
+            MemberOwningModel memberOwningModel)
         {
             var parameterSyntaxes = typeDeclarationSyntax.ChildNodes().OfType<ParameterListSyntax>().ToList();
-            if (parameterSyntaxes.Count == 0) { return null; }
-            if (SemanticModel.GetDeclaredSymbol(typeDeclarationSyntax) is not INamedTypeSymbol typeSymbol) { return null; }
+            if (parameterSyntaxes.Count == 0) return;
+            if (SemanticModel.GetDeclaredSymbol(typeDeclarationSyntax) is not INamedTypeSymbol typeSymbol) return; 
             
             var primaryConstructor = typeSymbol.InstanceConstructors[0];
             var constructorModel = new ConstructorModel
@@ -44,48 +44,81 @@ namespace csharp_to_json_converter.utils.analyzers
                 FirstLineNumber = typeDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
                 LastLineNumber = typeDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1
             };
-
-            return constructorModel;
+            memberOwningModel.Constructors.Add(constructorModel);
         }
 
-        private List<ConstructorModel> FindConstructors(SyntaxNode syntaxNode)
+        private void AnalyzeExplicitConstructors(SyntaxNode syntaxNode, MemberOwningModel memberOwningModel)
         {
             List<ConstructorDeclarationSyntax> constructorDeclarationSyntaxes = syntaxNode
                 .DescendantNodes()
                 .OfType<ConstructorDeclarationSyntax>()
                 .ToList();
-
-            List<ConstructorModel> result = new List<ConstructorModel>();
-
+            
             foreach (ConstructorDeclarationSyntax constructorDeclarationSyntax in constructorDeclarationSyntaxes)
             {
                 IMethodSymbol methodSymbol = SemanticModel.GetDeclaredSymbol(constructorDeclarationSyntax) as IMethodSymbol;
-                if (methodSymbol == null) { continue; }
-                
-                ConstructorModel constructorModel = new ConstructorModel
-                {
-                    Name = constructorDeclarationSyntax.Identifier.Text,
-                    Fqn = methodSymbol.ToString(),
-                    ReturnType = methodSymbol.ContainingType.ToString(),
-                    Static = methodSymbol.IsStatic,
-                    Abstract = methodSymbol.IsAbstract,
-                    Sealed = methodSymbol.IsSealed,
-                    Async = methodSymbol.IsAsync,
-                    Override = methodSymbol.IsOverride,
-                    Virtual = methodSymbol.IsVirtual,
-                    IsPrimaryConstructor = false,
-                    Accessibility = methodSymbol.DeclaredAccessibility.ToString(),
-                    FirstLineNumber = constructorDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
-                    LastLineNumber = constructorDeclarationSyntax.GetLocation().GetLineSpan().EndLinePosition.Line + 1
-                };
+                if (methodSymbol == null) continue;
+                var constructorModel = CreateConstructorModel(constructorDeclarationSyntax, methodSymbol);
 
                 _invocationAnalyzer.Analyze(constructorDeclarationSyntax, constructorModel);
                 _parameterAnalyzer.Analyze(constructorDeclarationSyntax, constructorModel);
 
-                result.Add(constructorModel);
+                memberOwningModel.Constructors.Add(constructorModel);
             }
+        }
 
-            return result;
+        private ConstructorModel CreateConstructorModel(ConstructorDeclarationSyntax constructorDeclarationSyntax, IMethodSymbol methodSymbol)
+        {
+            ConstructorModel constructorModel = new ConstructorModel
+            {
+                Name = constructorDeclarationSyntax.Identifier.Text,
+                Fqn = methodSymbol.ToString(),
+                ReturnType = methodSymbol.ContainingType.ToString(),
+                Static = methodSymbol.IsStatic,
+                Abstract = methodSymbol.IsAbstract,
+                Sealed = methodSymbol.IsSealed,
+                Async = methodSymbol.IsAsync,
+                Override = methodSymbol.IsOverride,
+                Virtual = methodSymbol.IsVirtual,
+                IsPrimaryConstructor = false,
+                Accessibility = methodSymbol.DeclaredAccessibility.ToString(),
+                FirstLineNumber = constructorDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
+                LastLineNumber = constructorDeclarationSyntax.GetLocation().GetLineSpan().EndLinePosition.Line + 1
+            };
+            return constructorModel;
+        }
+
+        private void AnalyzeForDefaultConstructor(TypeDeclarationSyntax typeDeclarationSyntax, MemberOwningModel memberOwningModel)
+        {
+            if (typeDeclarationSyntax.DescendantNodes().OfType<ConstructorDeclarationSyntax>().Any()
+                || typeDeclarationSyntax.DescendantNodes().OfType<ParameterListSyntax>().Any()
+                || memberOwningModel.Static) return;
+            
+            AddImplicitDefaultConstructor(typeDeclarationSyntax, memberOwningModel);
+        }
+
+        private void AddImplicitDefaultConstructor(TypeDeclarationSyntax typeDeclarationSyntax, MemberOwningModel memberOwningModel)
+        {
+            if (SemanticModel.GetDeclaredSymbol(typeDeclarationSyntax) is not INamedTypeSymbol typeSymbol) return;
+            var constructor = FindPublicDefaultConstructor(typeSymbol);
+            memberOwningModel.Constructors.Add(new ConstructorModel
+            {
+                Fqn = constructor.ToString(),
+                Name = constructor.ToString()![(constructor.ToString().LastIndexOf(".") + 1)..],
+                ReturnType = typeSymbol.ToString(),
+                Accessibility = "Public",
+                IsPrimaryConstructor = false,
+                Parameters = new List<ParameterModel>()
+            });
+        }
+
+        private static IMethodSymbol FindPublicDefaultConstructor(INamedTypeSymbol typeSymbol)
+        {
+            var constructor = typeSymbol.Constructors.Length > 1 ? 
+                typeSymbol.Constructors.ToList().Find(c => c.DeclaredAccessibility.ToString().Equals("Public")) 
+                : typeSymbol.Constructors[0];
+
+            return constructor;
         }
     }
 }
