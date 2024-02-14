@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using csharp_to_json_converter.model;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using IdentifierNameSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.IdentifierNameSyntax;
 using InvocationExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.InvocationExpressionSyntax;
 using MemberAccessExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.MemberAccessExpressionSyntax;
-using ObjectCreationExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ObjectCreationExpressionSyntax;
 
 namespace csharp_to_json_converter.utils.analyzers
 {
@@ -22,7 +21,7 @@ namespace csharp_to_json_converter.utils.analyzers
             var invocationExpressions = syntaxNode.DescendantNodes().OfType<InvocationExpressionSyntax>().ToList();
             ProcessInvocations(invocationExpressions, methodModel);
 
-            var objectCreationExpressions = syntaxNode.DescendantNodes().OfType<ObjectCreationExpressionSyntax>().ToList();
+            var objectCreationExpressions = syntaxNode.DescendantNodes().OfType<BaseObjectCreationExpressionSyntax>().ToList();
             ProcessConstructors(objectCreationExpressions, methodModel);
             
             var identifierNames = syntaxNode.DescendantNodes().OfType<IdentifierNameSyntax>().ToList();
@@ -31,10 +30,6 @@ namespace csharp_to_json_converter.utils.analyzers
 
         private void ProcessPropertyAccesses(List<IdentifierNameSyntax> identifierNames, MethodModel methodModel)
         {
-            if (methodModel.Name == "InvokeAsync")
-            {
-                Console.WriteLine();
-            }
             foreach (var nameSyntax in identifierNames)
             {
                 var symbol = SemanticModel.GetSymbolInfo(nameSyntax).Symbol;
@@ -51,7 +46,7 @@ namespace csharp_to_json_converter.utils.analyzers
             }
         }
 
-        private void ProcessConstructors(List<ObjectCreationExpressionSyntax> objectCreations, MethodModel methodModel)
+        private void ProcessConstructors(List<BaseObjectCreationExpressionSyntax> objectCreations, MethodModel methodModel)
         {
             foreach (var objectCreation in objectCreations)
             {                
