@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using csharp_to_json_converter.model;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace csharp_to_json_converter.utils.analyzers
@@ -29,21 +30,44 @@ namespace csharp_to_json_converter.utils.analyzers
         {
             var parameterSyntaxes = typeDeclarationSyntax.ChildNodes().OfType<ParameterListSyntax>().ToList();
             if (parameterSyntaxes.Count == 0) return;
-            if (SemanticModel.GetDeclaredSymbol(typeDeclarationSyntax) is not INamedTypeSymbol typeSymbol) return; 
+            if (ModelExtensions.GetDeclaredSymbol(SemanticModel, typeDeclarationSyntax) is not INamedTypeSymbol typeSymbol) return; 
             
+            AddPrimaryConstructorWithArguments(typeDeclarationSyntax, memberOwningModel, typeSymbol, parameterSyntaxes);
+            
+            if (typeDeclarationSyntax.Kind() != SyntaxKind.RecordStructDeclaration) return;
+            AddPrimaryConstructorWithoutArguments(typeDeclarationSyntax, memberOwningModel, typeSymbol);
+        }
+
+        private void AddPrimaryConstructorWithoutArguments(TypeDeclarationSyntax typeDeclarationSyntax, MemberOwningModel memberOwningModel,
+            INamedTypeSymbol typeSymbol)
+        {
+            var noArgsConstructor = typeSymbol.InstanceConstructors[1];
+            var model = CreateConstructorModel(typeDeclarationSyntax, noArgsConstructor, typeSymbol);
+            memberOwningModel.Constructors.Add(model);
+        }
+
+        private void AddPrimaryConstructorWithArguments(TypeDeclarationSyntax typeDeclarationSyntax, MemberOwningModel memberOwningModel, INamedTypeSymbol typeSymbol,
+            List<ParameterListSyntax> parameterSyntaxes)
+        {
             var primaryConstructor = typeSymbol.InstanceConstructors[0];
+            var constructorModel = CreateConstructorModel(typeDeclarationSyntax, primaryConstructor, typeSymbol);
+            constructorModel.Parameters = _parameterAnalyzer.CreateParameterModels(parameterSyntaxes[0].Parameters.ToList());
+            memberOwningModel.Constructors.Add(constructorModel);
+        }
+
+        private ConstructorModel CreateConstructorModel(TypeDeclarationSyntax typeDeclarationSyntax, IMethodSymbol primaryConstructor, INamedTypeSymbol typeSymbol)
+        {
             var constructorModel = new ConstructorModel
             {
                 Fqn = primaryConstructor.ToString(),
                 Name = primaryConstructor.ToString()![(primaryConstructor.ToString().LastIndexOf(".") + 1)..primaryConstructor.ToString().IndexOf("(")],
-                Parameters = _parameterAnalyzer.CreateParameterModels(parameterSyntaxes[0].Parameters.ToList()),
                 ReturnType = typeSymbol.ToString(),
                 Accessibility = "Public",
                 IsPrimaryConstructor = true,
                 FirstLineNumber = typeDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
                 LastLineNumber = typeDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1
             };
-            memberOwningModel.Constructors.Add(constructorModel);
+            return constructorModel;
         }
 
         private void AnalyzeExplicitConstructors(SyntaxNode syntaxNode, MemberOwningModel memberOwningModel)
@@ -55,7 +79,7 @@ namespace csharp_to_json_converter.utils.analyzers
             
             foreach (var constructorDeclarationSyntax in constructorDeclarationSyntaxes)
             {
-                if (SemanticModel.GetDeclaredSymbol(constructorDeclarationSyntax) is not IMethodSymbol methodSymbol) continue;
+                if (ModelExtensions.GetDeclaredSymbol(SemanticModel, constructorDeclarationSyntax) is not IMethodSymbol methodSymbol) continue;
                 var constructorModel = CreateConstructorModel(constructorDeclarationSyntax, methodSymbol);
 
                 if (constructorDeclarationSyntax.DescendantNodes().OfType<ConstructorInitializerSyntax>().Any())
@@ -107,7 +131,7 @@ namespace csharp_to_json_converter.utils.analyzers
 
         private void AddImplicitDefaultConstructor(TypeDeclarationSyntax typeDeclarationSyntax, MemberOwningModel memberOwningModel)
         {
-            if (SemanticModel.GetDeclaredSymbol(typeDeclarationSyntax) is not INamedTypeSymbol typeSymbol) return;
+            if (ModelExtensions.GetDeclaredSymbol(SemanticModel, typeDeclarationSyntax) is not INamedTypeSymbol typeSymbol) return;
             var constructor = FindPublicDefaultConstructor(typeSymbol);
             memberOwningModel.Constructors.Add(new ConstructorModel
             {
