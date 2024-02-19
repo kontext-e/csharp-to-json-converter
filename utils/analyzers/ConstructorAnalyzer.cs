@@ -35,7 +35,7 @@ namespace csharp_to_json_converter.utils.analyzers
             var constructorModel = new ConstructorModel
             {
                 Fqn = primaryConstructor.ToString(),
-                Name = primaryConstructor.ToString()![(primaryConstructor.ToString().LastIndexOf(".") + 1)..],
+                Name = primaryConstructor.ToString()![(primaryConstructor.ToString().LastIndexOf(".") + 1)..primaryConstructor.ToString().IndexOf("(")],
                 Parameters = _parameterAnalyzer.CreateParameterModels(parameterSyntaxes[0].Parameters.ToList()),
                 ReturnType = typeSymbol.ToString(),
                 Accessibility = "Public",
@@ -112,7 +112,7 @@ namespace csharp_to_json_converter.utils.analyzers
             memberOwningModel.Constructors.Add(new ConstructorModel
             {
                 Fqn = constructor.ToString(),
-                Name = constructor.ToString()![(constructor.ToString().LastIndexOf(".") + 1)..],
+                Name = constructor.ToString()![(constructor.ToString().LastIndexOf(".") + 1)..constructor.ToString().IndexOf("(")],
                 ReturnType = typeSymbol.ToString(),
                 Accessibility = "Public",
                 IsPrimaryConstructor = false,
