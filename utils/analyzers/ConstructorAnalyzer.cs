@@ -13,9 +13,9 @@ namespace csharp_to_json_converter.utils.analyzers
         private readonly InvocationAnalyzer _invocationAnalyzer;
         private readonly ParameterAnalyzer _parameterAnalyzer;
 
-        internal ConstructorAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel) : base(syntaxTree, semanticModel)
+        internal ConstructorAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel, Solution solution) : base(syntaxTree, semanticModel)
         {
-            _invocationAnalyzer = new InvocationAnalyzer(SyntaxTree, SemanticModel);
+            _invocationAnalyzer = new InvocationAnalyzer(SyntaxTree, SemanticModel, solution);
             _parameterAnalyzer = new ParameterAnalyzer(SyntaxTree, SemanticModel);
         }
         

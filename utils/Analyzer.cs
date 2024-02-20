@@ -96,7 +96,7 @@ namespace csharp_to_json_converter.utils
             SyntaxTree syntaxTree = _syntaxTrees[fileInfo.FilePath!];
             SemanticModel semanticModel = _compilation[project.FilePath!].GetSemanticModel(syntaxTree);
             
-            FileAnalyzer fileAnalyzer = new FileAnalyzer(syntaxTree, semanticModel, _inputDirectory);
+            FileAnalyzer fileAnalyzer = new FileAnalyzer(syntaxTree, semanticModel, _inputDirectory, _solution);
             _fileModels.Add(fileAnalyzer.Analyze(fileInfo));
         }
         

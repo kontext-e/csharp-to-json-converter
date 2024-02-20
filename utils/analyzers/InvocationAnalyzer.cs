@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using csharp_to_json_converter.model;
 using Microsoft.CodeAnalysis;
@@ -11,9 +12,12 @@ namespace csharp_to_json_converter.utils.analyzers
 {
     public class InvocationAnalyzer : AbstractAnalyzer
     {
-        internal InvocationAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel) : base(syntaxTree,
+        private readonly Solution _solution;
+
+        internal InvocationAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel, Solution solution) : base(syntaxTree,
             semanticModel)
         {
+            _solution = solution;
         }
 
         public void Analyze(SyntaxNode syntaxNode, MethodModel methodModel)

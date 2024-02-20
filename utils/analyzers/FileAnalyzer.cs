@@ -13,23 +13,23 @@ namespace csharp_to_json_converter.utils.analyzers
         private readonly DirectoryInfo _inputDirectory;
         private readonly StructAnalyzer _structAnalyzer;
 
-        public FileAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel, DirectoryInfo inputDirectory) : base(
+        public FileAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel, DirectoryInfo inputDirectory, Solution solution) : base(
             syntaxTree, semanticModel)
         {
             _inputDirectory = inputDirectory;
             _enumAnalyzer = new EnumAnalyzer(SyntaxTree, SemanticModel, _inputDirectory);
-            _classAnalyzer = new ClassAnalyzer(SyntaxTree, SemanticModel, _inputDirectory);
+            _classAnalyzer = new ClassAnalyzer(SyntaxTree, SemanticModel, _inputDirectory, solution);
             _usingsAnalyzer = new UsingsAnalyzer(SyntaxTree, SemanticModel);
-            _interfaceAnalyzer = new InterfaceAnalyzer(SyntaxTree, SemanticModel, _inputDirectory);
-            _structAnalyzer = new StructAnalyzer(SyntaxTree, SemanticModel, _inputDirectory);
+            _interfaceAnalyzer = new InterfaceAnalyzer(SyntaxTree, SemanticModel, _inputDirectory, solution);
+            _structAnalyzer = new StructAnalyzer(SyntaxTree, SemanticModel, _inputDirectory, solution);
         }
 
-        internal FileModel Analyze(FileInfo fileInfo)
+        internal FileModel Analyze(Document fileInfo)
         {
             FileModel fileModel = new FileModel();
             fileModel.Name = fileInfo.Name;
-            fileModel.AbsolutePath = fileInfo.FullName;
-            fileModel.RelativePath = Path.GetRelativePath(_inputDirectory.FullName, fileInfo.FullName);
+            fileModel.AbsolutePath = fileInfo.FilePath;
+            fileModel.RelativePath = Path.GetRelativePath(_inputDirectory.FullName, fileInfo.FilePath);
 
             _interfaceAnalyzer.Analyze(fileModel);
             _enumAnalyzer.Analyze(fileModel);

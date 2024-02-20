@@ -16,11 +16,11 @@ namespace csharp_to_json_converter.utils.analyzers
         private readonly PropertyAnalyzer _propertyAnalyzer;
         private readonly DirectoryInfo _inputDirectory;
 
-        internal ClassAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel, DirectoryInfo inputDirectory) : base(syntaxTree, semanticModel)
+        internal ClassAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel, DirectoryInfo inputDirectory, Solution solution) : base(syntaxTree, semanticModel)
         {
             _inputDirectory = inputDirectory;
-            _methodAnalyzer = new MethodAnalyzer(SyntaxTree, SemanticModel);
-            _constructorAnalyzer = new ConstructorAnalyzer(SyntaxTree, SemanticModel);
+            _methodAnalyzer = new MethodAnalyzer(SyntaxTree, SemanticModel, solution);
+            _constructorAnalyzer = new ConstructorAnalyzer(SyntaxTree, SemanticModel, solution);
             _fieldAnalyzer = new FieldAnalyzer(SyntaxTree, SemanticModel);
             _propertyAnalyzer = new PropertyAnalyzer(SyntaxTree, SemanticModel);
         }

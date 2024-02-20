@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using csharp_to_json_converter.model;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.FlowAnalysis;
 
 namespace csharp_to_json_converter.utils.analyzers
@@ -13,9 +15,9 @@ namespace csharp_to_json_converter.utils.analyzers
         private readonly InvocationAnalyzer _invocationAnalyzer;
         private readonly ParameterAnalyzer _parameterAnalyzer;
 
-        internal MethodAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel) : base(syntaxTree, semanticModel)
+        internal MethodAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel, Solution solution) : base(syntaxTree, semanticModel)
         {
-            _invocationAnalyzer = new InvocationAnalyzer(SyntaxTree, SemanticModel);
+            _invocationAnalyzer = new InvocationAnalyzer(SyntaxTree, SemanticModel, solution);
             _parameterAnalyzer = new ParameterAnalyzer(SyntaxTree, SemanticModel);
         }
 
