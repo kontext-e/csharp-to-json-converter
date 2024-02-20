@@ -33,15 +33,13 @@ namespace csharp_to_json_converter.utils.analyzers
             foreach (var nameSyntax in identifierNames)
             {
                 var symbol = SemanticModel.GetSymbolInfo(nameSyntax).Symbol;
-                if (symbol is null) { continue; }
-                if (symbol.Kind != SymbolKind.Property) { continue; }
-
+                if (symbol is null || symbol.Kind != SymbolKind.Property) continue; 
+                
                 var memberAccess = new MemberAccessModel
                 {
                     LineNumber = nameSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
                     MemberId = symbol.ToString()
                 };
-                
                 methodModel.MemberAccesses.Add(memberAccess);
             }
         }
@@ -77,7 +75,7 @@ namespace csharp_to_json_converter.utils.analyzers
                     methodSymbol = SemanticModel.GetSymbolInfo(identifierNameSyntax).Symbol as IMethodSymbol;
                 }
 
-                var invokesModel = new InvocationModel()
+                var invokesModel = new InvocationModel
                 {
                     LineNumber = memberAccesses.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
                     MethodId = methodSymbol?.ToString()

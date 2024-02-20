@@ -27,19 +27,12 @@ namespace csharp_to_json_converter.utils.analyzers
 
         internal void Analyze(FileModel fileModel)
         {
-            List<ClassDeclarationSyntax> classDeclarationSyntaxes = SyntaxTree
-                .GetRoot()
-                .DescendantNodes()
-                .OfType<ClassDeclarationSyntax>()
-                .ToList();
+            AnalyzeClasses(fileModel);
+            AnalyzeRecords(fileModel);
+        }
 
-            foreach (ClassDeclarationSyntax classDeclarationSyntax in classDeclarationSyntaxes)
-            {
-                var classModel = new ClassModel();
-                AnalyzeType(fileModel, classDeclarationSyntax, classModel);
-                fileModel.Classes.Add(classModel);
-            }
-
+        private void AnalyzeRecords(FileModel fileModel)
+        {
             List<RecordDeclarationSyntax> recordDeclarationSyntaxes = SyntaxTree
                 .GetRoot()
                 .DescendantNodes()
@@ -52,6 +45,22 @@ namespace csharp_to_json_converter.utils.analyzers
                 var recordClassModel = new RecordClassModel();
                 AnalyzeType(fileModel, recordDeclarationSyntax, recordClassModel);
                 fileModel.RecordClasses.Add(recordClassModel);
+            }
+        }
+
+        private void AnalyzeClasses(FileModel fileModel)
+        {
+            List<ClassDeclarationSyntax> classDeclarationSyntaxes = SyntaxTree
+                .GetRoot()
+                .DescendantNodes()
+                .OfType<ClassDeclarationSyntax>()
+                .ToList();
+
+            foreach (ClassDeclarationSyntax classDeclarationSyntax in classDeclarationSyntaxes)
+            {
+                var classModel = new ClassModel();
+                AnalyzeType(fileModel, classDeclarationSyntax, classModel);
+                fileModel.Classes.Add(classModel);
             }
         }
 
