@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using csharp_to_json_converter.model;
 using csharp_to_json_converter.utils.analyzers;
+using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.MSBuild;
 using NLog;
 
 namespace csharp_to_json_converter.utils
@@ -14,87 +14,106 @@ namespace csharp_to_json_converter.utils
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private List<FileModel> _fileModels;
-        private List<FileInfo> _fileInfos;
         private Dictionary<string, SyntaxTree> _syntaxTrees;
-        private Compilation _compilation;
+        private Dictionary<string, Compilation> _compilation;
         private DirectoryInfo _inputDirectory;
+        private Solution _solution;
 
-        public Analyzer(List<FileInfo> fileInfos, DirectoryInfo inputDirectory)
+        public Analyzer(DirectoryInfo inputDirectory)
         {
             _inputDirectory = inputDirectory;
             _fileModels = new List<FileModel>();
-            _fileInfos = fileInfos;
             _syntaxTrees = new Dictionary<string, SyntaxTree>();
-        }
-
-        private void CreateCompilation()
-        {
-            Logger.Info("Creating compilation ...");
-
-            foreach (FileInfo fileInfo in _fileInfos)
-            {
-                string scriptText = TryToReadFile(fileInfo);
-                SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(scriptText);
-                _syntaxTrees.Add(fileInfo.FullName, syntaxTree);
-            }
-
-            _compilation = CSharpCompilation
-                .Create("all")
-                .AddSyntaxTrees(_syntaxTrees.Values)
-                .AddReferences(
-                    MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                    MetadataReference.CreateFromFile(typeof(Console).Assembly.Location)
-                );
-
-            Logger.Info("Finished creating compilation.");
+            _compilation = new Dictionary<string, Compilation>();
         }
 
         internal List<FileModel> Analyze()
         {
+            Logger.Info("Creating compilation ...");
             CreateCompilation();
-
+            Logger.Info("Finished creating compilation.");
+            
             Logger.Info("Analyzing scripts ...");
-            foreach (FileInfo fileInfo in _fileInfos)
-            {
-                AnalyzeScript(fileInfo);
-            }
-
+            AnalyzeScripts();
             Logger.Info("Finished analyzing scripts.");
 
             return _fileModels;
         }
 
-        private void AnalyzeScript(FileInfo fileInfo)
+        private void CreateCompilation()
         {
-            Logger.Debug("Analyzing script '{0}' ...", fileInfo.FullName);
+            OpenSolution();
+            ReadProjects();
+        }
 
-            string scriptText = TryToReadFile(fileInfo);
+        private void OpenSolution()
+        {
+            var solutionFile = ScriptFinder.FindSolutionFile(_inputDirectory);
+            MSBuildLocator.RegisterDefaults();
+            var workspace = MSBuildWorkspace.Create();
+            _solution = workspace.OpenSolutionAsync(solutionFile.FullName).Result;
+        }
 
-            if (scriptText.Length == 0)
+        private void ReadProjects()
+        {
+            foreach (var project in _solution.Projects)
             {
-                return;
+                var compilation = project.GetCompilationAsync().Result;
+                if (compilation == null) continue;
+                
+                _compilation[project.FilePath!] = compilation;
+                ReadSyntaxTrees(compilation);
             }
+        }
+
+        private void ReadSyntaxTrees(Compilation compilation)
+        {
+            foreach (var syntaxTree in compilation.SyntaxTrees)
+            {
+                var filePath = syntaxTree.FilePath;
+                if (filePath.Contains(".nuget") || filePath.Contains("obj") || filePath.Contains("bin")) continue;
+                _syntaxTrees.TryAdd(filePath, syntaxTree);
+            }
+        }
+
+        private void AnalyzeScripts()
+        {
+            foreach (var project in _solution.Projects) 
+            {
+                foreach (var fileInfo in project.Documents) 
+                {
+                    if (fileInfo.FilePath!.Contains("obj") || fileInfo.FilePath.Contains("bin") || fileInfo.FilePath.Contains(".nuget")) continue;
+                    AnalyzeScript(project, fileInfo);
+                }
+            }
+        }
+
+        private void AnalyzeScript(Project project, Document fileInfo)
+        {
+            Logger.Debug("Analyzing script '{0}' ...", fileInfo.FilePath);
+            if (FileIsEmpty(fileInfo)) return;
             
-            SyntaxTree syntaxTree = _syntaxTrees[fileInfo.FullName];
-            SemanticModel semanticModel = _compilation.GetSemanticModel(syntaxTree);
+            SyntaxTree syntaxTree = _syntaxTrees[fileInfo.FilePath!];
+            SemanticModel semanticModel = _compilation[project.FilePath!].GetSemanticModel(syntaxTree);
             
             FileAnalyzer fileAnalyzer = new FileAnalyzer(syntaxTree, semanticModel, _inputDirectory);
             _fileModels.Add(fileAnalyzer.Analyze(fileInfo));
         }
         
-        private static string TryToReadFile(FileInfo fileInfo)
+        private static bool FileIsEmpty(Document fileInfo)
         {
             try
             {
-                using StreamReader sr = new StreamReader(fileInfo.FullName);
-                return sr.ReadToEnd();
+                using StreamReader sr = new StreamReader(fileInfo.FilePath!);
+                var fileIsEmpty = sr.ReadToEnd();
+                return fileIsEmpty.Length == 0;
             }
             catch (IOException e)
             {
-                Logger.Error("The file '{0}' could not be read:\n\n{1}", fileInfo.FullName, e.Message);
+                Logger.Error("The file '{0}' could not be read:\n\n{1}", fileInfo.FilePath, e.Message);
             }
 
-            return "";
+            return true;
         }
     }
 }

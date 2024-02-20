@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using NLog;
 
@@ -10,47 +8,17 @@ namespace csharp_to_json_converter.utils
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        internal static List<FileInfo> FindScriptsRecursivelyUnder(DirectoryInfo directoryInfo)
+        public static FileInfo FindSolutionFile(DirectoryInfo inputDirectory)
         {
-            List<FileInfo> fileInfos = TryToFindScriptsIn(directoryInfo);
-
-            foreach (FileInfo fi in fileInfos)
+            var fileInfos = inputDirectory.GetFiles("*.sln").ToList();
+            if (fileInfos.Count == 1)
             {
-                Logger.Debug("Found script: " + fi.FullName);
+                Logger.Debug("Fund Solution File: " + fileInfos[0].FullName);
+                return fileInfos[0];
             }
 
-            DirectoryInfo[] subDirs = directoryInfo.GetDirectories();
-
-            foreach (DirectoryInfo dirInfo in subDirs)
-            {
-                if (directoryInfo.Name.Equals("obj") || directoryInfo.Name.Equals("bin"))
-                {
-                    continue;
-                }
-
-                fileInfos.AddRange(FindScriptsRecursivelyUnder(dirInfo));
-            }
-
-            return fileInfos;
-        }
-
-        private static List<FileInfo> TryToFindScriptsIn(DirectoryInfo directoryInfo)
-        {
-            List<FileInfo> fileInfos = new List<FileInfo>();
-            try
-            {
-                fileInfos = directoryInfo.GetFiles("*.cs").ToList();
-            }
-            catch (UnauthorizedAccessException e)
-            {
-                Logger.Error(e.Message);
-            }
-            catch (DirectoryNotFoundException e)
-            {
-                Logger.Error(e.Message);
-            }
-
-            return fileInfos;
+            Logger.Error("Please make sure there is exactly one solution file in Directory");
+            return null;
         }
     }
 }
