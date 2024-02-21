@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using csharp_to_json_converter.model;
 using csharp_to_json_converter.utils.analyzers;
@@ -48,10 +49,18 @@ namespace csharp_to_json_converter.utils
 
         private void OpenSolution()
         {
-            var solutionFile = ScriptFinder.FindSolutionFile(_inputDirectory);
-            MSBuildLocator.RegisterDefaults();
-            var workspace = MSBuildWorkspace.Create();
-            _solution = workspace.OpenSolutionAsync(solutionFile.FullName).Result;
+            try
+            {
+                var solutionFile = ScriptFinder.FindSolutionFile(_inputDirectory);
+                MSBuildLocator.RegisterDefaults();
+                var workspace = MSBuildWorkspace.Create();
+                _solution = workspace.OpenSolutionAsync(solutionFile.FullName).Result;
+
+            }
+            catch (FileNotFoundException e)
+            {
+                Logger.Error(e);
+            }
         }
 
         private void ReadProjects()

@@ -2,23 +2,30 @@
 using System.Linq;
 using NLog;
 
-namespace csharp_to_json_converter.utils
+namespace csharp_to_json_converter.utils;
+
+public static class ScriptFinder
 {
-    public static class ScriptFinder
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+    public static FileInfo FindSolutionFile(DirectoryInfo inputDirectory)
     {
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        var findSolutionFile = FindSolutionFileRecursively(inputDirectory);
+        if (findSolutionFile == null)
+            throw new FileNotFoundException("Could not find Solution File in Directory (including nested): " + inputDirectory.FullName);
+        
+        return findSolutionFile;
+    }
 
-        public static FileInfo FindSolutionFile(DirectoryInfo inputDirectory)
+    private static FileInfo FindSolutionFileRecursively(DirectoryInfo inputDirectory)
+    {
+        var fileInfos = inputDirectory.GetFiles("*.sln").ToList();
+        if (fileInfos.Count == 1)
         {
-            var fileInfos = inputDirectory.GetFiles("*.sln").ToList();
-            if (fileInfos.Count == 1)
-            {
-                Logger.Debug("Fund Solution File: " + fileInfos[0].FullName);
-                return fileInfos[0];
-            }
-
-            Logger.Error("Please make sure there is exactly one solution file in Directory");
-            return null;
+            Logger.Debug("Found Solution File: " + fileInfos[0].FullName);
+            return fileInfos[0];
         }
+
+        return inputDirectory.GetDirectories().Select(FindSolutionFileRecursively).FirstOrDefault();
     }
 }
