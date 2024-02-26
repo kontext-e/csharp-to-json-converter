@@ -2,13 +2,10 @@
 {
     public abstract class MultiLineModel
     {
-        public int FirstLineNumber { get; set; }
-        public int LastLineNumber { get; set; }
+        public int? FirstLineNumber { get; set; }
+        public int? LastLineNumber { get; set; }
         
         // ReSharper disable once UnusedMember.Global
-        public int EffectiveLineCount
-        {
-            get { return LastLineNumber - FirstLineNumber; }
-        }
+        public int? EffectiveLineCount => LastLineNumber - FirstLineNumber;
     }
 }

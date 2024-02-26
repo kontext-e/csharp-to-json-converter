@@ -32,7 +32,7 @@ namespace csharp_to_json_converter.utils.analyzers
             {
                 var methodModel = new MethodModel();
                 
-                var methodSymbol = ModelExtensions.GetDeclaredSymbol(SemanticModel, methodDeclarationSyntax) as IMethodSymbol;
+                var methodSymbol = SemanticModel.GetDeclaredSymbol(methodDeclarationSyntax) as IMethodSymbol;
                 if (methodSymbol == null) { continue; }
 
                 methodModel.Name = methodDeclarationSyntax.Identifier.Text;
@@ -65,8 +65,8 @@ namespace csharp_to_json_converter.utils.analyzers
                     methodModel.CyclomaticComplexity = CalculateCyclomaticComplexity(controlFlowGraph);
                 }
                 
-                _invocationAnalyzer.Analyze(methodDeclarationSyntax, methodModel);
-                _parameterAnalyzer.Analyze(methodDeclarationSyntax, methodModel);
+                _invocationAnalyzer.ProcessInvocations(methodSymbol, methodModel);
+                _parameterAnalyzer.Analyze(methodSymbol, methodModel);
 
                 memberOwningModel.Methods.Add(methodModel);
             }

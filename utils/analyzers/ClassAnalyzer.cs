@@ -22,7 +22,7 @@ namespace csharp_to_json_converter.utils.analyzers
             _methodAnalyzer = new MethodAnalyzer(SyntaxTree, SemanticModel, solution);
             _constructorAnalyzer = new ConstructorAnalyzer(SyntaxTree, SemanticModel, solution);
             _fieldAnalyzer = new FieldAnalyzer(SyntaxTree, SemanticModel);
-            _propertyAnalyzer = new PropertyAnalyzer(SyntaxTree, SemanticModel);
+            _propertyAnalyzer = new PropertyAnalyzer(SyntaxTree, SemanticModel, solution);
         }
 
         internal void Analyze(FileModel fileModel)
@@ -64,21 +64,21 @@ namespace csharp_to_json_converter.utils.analyzers
             }
         }
 
-        private void AnalyzeType(FileModel fileModel, TypeDeclarationSyntax classDeclarationSyntax, ClassModel classModel)
+        private void AnalyzeType(FileModel fileModel, TypeDeclarationSyntax typeDeclarationSyntax, ClassModel classModel)
         {
-            var namedTypeSymbol = ModelExtensions.GetDeclaredSymbol(SemanticModel, classDeclarationSyntax) as INamedTypeSymbol;
+            var namedTypeSymbol = ModelExtensions.GetDeclaredSymbol(SemanticModel, typeDeclarationSyntax) as INamedTypeSymbol;
             if (namedTypeSymbol == null) { return; }
 
-            FillModel(fileModel, classModel, classDeclarationSyntax, namedTypeSymbol);
-            AnalyzeMembers(classDeclarationSyntax, classModel);
+            FillModel(fileModel, classModel, typeDeclarationSyntax, namedTypeSymbol);
+            AnalyzeMembers(typeDeclarationSyntax, classModel);
         }
 
-        private void AnalyzeMembers(TypeDeclarationSyntax classDeclarationSyntax, ClassModel classModel)
+        private void AnalyzeMembers(TypeDeclarationSyntax typeDeclarationSyntax, MemberOwningModel memberOwningModel)
         {
-            _fieldAnalyzer.Analyze(classDeclarationSyntax, classModel);
-            _methodAnalyzer.Analyze(classDeclarationSyntax, classModel);
-            _constructorAnalyzer.Analyze(classDeclarationSyntax, classModel);
-            _propertyAnalyzer.Analyze(classDeclarationSyntax, classModel);
+            _fieldAnalyzer.Analyze(typeDeclarationSyntax, memberOwningModel);
+            _methodAnalyzer.Analyze(typeDeclarationSyntax, memberOwningModel);
+            _constructorAnalyzer.Analyze(typeDeclarationSyntax, memberOwningModel);
+            _propertyAnalyzer.Analyze(typeDeclarationSyntax, memberOwningModel);
         }
 
         private void FillModel(FileModel fileModel, ClassModel classModel, TypeDeclarationSyntax classDeclarationSyntax,

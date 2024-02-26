@@ -14,14 +14,14 @@ namespace csharp_to_json_converter.model
         public bool IsExtensionMethod { get; set; }
         public string ExtendsType { get; set; }
         public List<MemberAccessModel> MemberAccesses { get; set; }
-        public List<InvocationModel> Invocations { get; set; }
+        public List<InvocationModel> InvokedBy { get; set; }
         public List<ParameterModel> Parameters { get; set; }
 
         public MethodModel()
         {
             MemberAccesses = new List<MemberAccessModel>();
             Parameters = new List<ParameterModel>();
-            Invocations = new List<InvocationModel>();
+            InvokedBy = new List<InvocationModel>();
         }
     }
 }

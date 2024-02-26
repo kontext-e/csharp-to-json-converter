@@ -25,7 +25,7 @@ namespace csharp_to_json_converter.utils.analyzers
             _fieldAnalyzer = new FieldAnalyzer(syntaxTree, semanticModel);
             _methodAnalyzer = new MethodAnalyzer(syntaxTree, semanticModel, solution);
             _constructorAnalyzer = new ConstructorAnalyzer(syntaxTree, semanticModel, solution);
-            _propertyAnalyzer = new PropertyAnalyzer(syntaxTree, semanticModel);
+            _propertyAnalyzer = new PropertyAnalyzer(syntaxTree, semanticModel, solution);
         }
 
         public void Analyze(FileModel fileModel)
