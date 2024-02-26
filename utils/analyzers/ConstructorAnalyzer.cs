@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using csharp_to_json_converter.model;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -45,7 +43,6 @@ namespace csharp_to_json_converter.utils.analyzers
             var location = locations.Count == 1 ? locations[0] : null;
             var constructorModel = new ConstructorModel
             {
-                //Results in ..ctor()
                 Name = methodSymbol.MetadataName,
                 Fqn = methodSymbol.ToString(),
                 ReturnType = methodSymbol.ContainingType.ToString(),

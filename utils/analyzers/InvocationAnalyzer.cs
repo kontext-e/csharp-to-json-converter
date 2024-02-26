@@ -20,24 +20,16 @@ namespace csharp_to_json_converter.utils.analyzers
             var callersAsync = SymbolFinder.FindCallersAsync(methodSymbol, _solution).Result;
             foreach (var caller in callersAsync)
             {
-                var invocationModel = new InvocationModel
-                {
-                    MethodId = caller.CallingSymbol.ToString()
-                };
-                methodModel.InvokedBy.Add(invocationModel);
+                methodModel.InvokedBy.Add(new InvocationModel { MethodId = caller.CallingSymbol.ToString() });
             }
         }
 
-        public void ProcessPropertyAccesses(IPropertySymbol propertySymbol, MethodModel methodModel)
+        public void ProcessPropertyAccesses(IPropertySymbol propertySymbol, PropertyModel propertyModel)
         {
             var callers = SymbolFinder.FindCallersAsync(propertySymbol, _solution).Result;
             foreach (var caller in callers)
             {
-                var memberAccess = new MemberAccessModel
-                {
-                    MemberId = caller.CallingSymbol.ToString()
-                };
-                methodModel.MemberAccesses.Add(memberAccess);
+                propertyModel.Accesses.Add(new InvocationModel { MethodId = caller.CallingSymbol.ToString() } );
             }
         }
     }

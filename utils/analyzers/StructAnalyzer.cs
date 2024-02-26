@@ -25,7 +25,7 @@ namespace csharp_to_json_converter.utils.analyzers
             _fieldAnalyzer = new FieldAnalyzer(syntaxTree, semanticModel);
             _methodAnalyzer = new MethodAnalyzer(syntaxTree, semanticModel, solution);
             _constructorAnalyzer = new ConstructorAnalyzer(syntaxTree, semanticModel, solution);
-            _propertyAnalyzer = new PropertyAnalyzer(syntaxTree, semanticModel, solution);
+            _propertyAnalyzer = new PropertyAnalyzer(syntaxTree, semanticModel);
         }
 
         public void Analyze(FileModel fileModel)
@@ -64,15 +64,15 @@ namespace csharp_to_json_converter.utils.analyzers
             if (namedTypeSymbol == null) { return; }
 
             FillModel(fileModel, structModel, structDeclaration, namedTypeSymbol);
-            AnalyzeMembers(structDeclaration, structModel);
+            AnalyzeMembers(structDeclaration, structModel, namedTypeSymbol);
         }
 
-        private void AnalyzeMembers(TypeDeclarationSyntax structDeclaration, StructModel structModel)
+        private void AnalyzeMembers(TypeDeclarationSyntax structDeclaration, StructModel structModel, INamedTypeSymbol namedTypeSymbol)
         {
             _fieldAnalyzer.Analyze(structDeclaration, structModel);
-            _methodAnalyzer.Analyze(structDeclaration, structModel);
+            _methodAnalyzer.Analyze(structDeclaration, namedTypeSymbol, structModel);
             _constructorAnalyzer.Analyze(structDeclaration, structModel);
-            _propertyAnalyzer.Analyze(structDeclaration, structModel);
+            _propertyAnalyzer.Analyze(namedTypeSymbol, structModel);
         }
 
         private void FillModel(FileModel fileModel, StructModel structModel, TypeDeclarationSyntax structDeclaration,

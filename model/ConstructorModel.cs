@@ -7,7 +7,6 @@ namespace csharp_to_json_converter.model
         public bool IsPrimaryConstructor { get; set; }
         public ConstructorModel()
         {
-            MemberAccesses = new List<MemberAccessModel>();
             Parameters = new List<ParameterModel>();
         }
     }

@@ -22,7 +22,7 @@ namespace csharp_to_json_converter.utils.analyzers
             _methodAnalyzer = new MethodAnalyzer(SyntaxTree, SemanticModel, solution);
             _constructorAnalyzer = new ConstructorAnalyzer(SyntaxTree, SemanticModel, solution);
             _fieldAnalyzer = new FieldAnalyzer(SyntaxTree, SemanticModel);
-            _propertyAnalyzer = new PropertyAnalyzer(SyntaxTree, SemanticModel, solution);
+            _propertyAnalyzer = new PropertyAnalyzer(SyntaxTree, SemanticModel);
         }
 
         internal void Analyze(FileModel fileModel)
@@ -66,19 +66,18 @@ namespace csharp_to_json_converter.utils.analyzers
 
         private void AnalyzeType(FileModel fileModel, TypeDeclarationSyntax typeDeclarationSyntax, ClassModel classModel)
         {
-            var namedTypeSymbol = ModelExtensions.GetDeclaredSymbol(SemanticModel, typeDeclarationSyntax) as INamedTypeSymbol;
-            if (namedTypeSymbol == null) { return; }
+            if (ModelExtensions.GetDeclaredSymbol(SemanticModel, typeDeclarationSyntax) is not INamedTypeSymbol namedTypeSymbol) { return; }
 
             FillModel(fileModel, classModel, typeDeclarationSyntax, namedTypeSymbol);
-            AnalyzeMembers(typeDeclarationSyntax, classModel);
+            AnalyzeMembers(typeDeclarationSyntax, classModel, namedTypeSymbol);
         }
 
-        private void AnalyzeMembers(TypeDeclarationSyntax typeDeclarationSyntax, MemberOwningModel memberOwningModel)
+        private void AnalyzeMembers(TypeDeclarationSyntax typeDeclarationSyntax, MemberOwningModel memberOwningModel, INamedTypeSymbol namedTypeSymbol)
         {
             _fieldAnalyzer.Analyze(typeDeclarationSyntax, memberOwningModel);
-            _methodAnalyzer.Analyze(typeDeclarationSyntax, memberOwningModel);
+            _methodAnalyzer.Analyze(typeDeclarationSyntax, namedTypeSymbol, memberOwningModel);
             _constructorAnalyzer.Analyze(typeDeclarationSyntax, memberOwningModel);
-            _propertyAnalyzer.Analyze(typeDeclarationSyntax, memberOwningModel);
+            _propertyAnalyzer.Analyze(namedTypeSymbol, memberOwningModel);
         }
 
         private void FillModel(FileModel fileModel, ClassModel classModel, TypeDeclarationSyntax classDeclarationSyntax,
@@ -92,12 +91,12 @@ namespace csharp_to_json_converter.utils.analyzers
             classModel.Sealed = namedTypeSymbol.IsSealed;
             classModel.RelativePath = Path.GetRelativePath(_inputDirectory.FullName, fileModel.AbsolutePath);
             classModel.Static = namedTypeSymbol.IsStatic;
-            classModel.Partial = classDeclarationSyntax.Modifiers.Any(modifier => modifier.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PartialKeyword));
+            classModel.Partial = classDeclarationSyntax.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.PartialKeyword));
             classModel.Md5 = BuildMD5(classDeclarationSyntax.GetText().ToString());
             classModel.FirstLineNumber = classDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
             classModel.LastLineNumber = classDeclarationSyntax.GetLocation().GetLineSpan().EndLinePosition.Line + 1;
             
-            foreach (INamedTypeSymbol interfaceTypeSymbol in namedTypeSymbol.Interfaces)
+            foreach (var interfaceTypeSymbol in namedTypeSymbol.Interfaces)
             {
                 classModel.ImplementedInterfaces.Add(interfaceTypeSymbol.ToString());
             }

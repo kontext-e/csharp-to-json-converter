@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using csharp_to_json_converter.model;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.FlowAnalysis;
 
 namespace csharp_to_json_converter.utils.analyzers
@@ -21,7 +19,29 @@ namespace csharp_to_json_converter.utils.analyzers
             _parameterAnalyzer = new ParameterAnalyzer(SyntaxTree, SemanticModel);
         }
 
-        public void Analyze(TypeDeclarationSyntax typeDeclarationSyntax, MemberOwningModel memberOwningModel)
+        public void Analyze(TypeDeclarationSyntax typeDeclarationSyntax, INamedTypeSymbol namedTypeSymbol, MemberOwningModel memberOwningModel)
+        {
+            AnalyzeExplicitMethods(typeDeclarationSyntax, memberOwningModel);
+            AnalyzePropertyGetterSetter(namedTypeSymbol, memberOwningModel);
+        }
+
+        private void AnalyzePropertyGetterSetter(INamedTypeSymbol namedTypeSymbol, MemberOwningModel memberOwningModel)
+        {
+            foreach (var member in namedTypeSymbol.GetMembers())
+            {
+                if (member is not IMethodSymbol accessor) { continue; }
+                if (accessor.MethodKind is not (MethodKind.PropertyGet or MethodKind.PropertySet)) { continue; }
+                
+                var methodModel = CreateAndFillMethodModel(accessor);
+                methodModel.AssociatedProperty = accessor.AssociatedSymbol?.ToString();
+                _invocationAnalyzer.ProcessInvocations(accessor, methodModel);
+                _parameterAnalyzer.Analyze(accessor, methodModel);
+                
+                memberOwningModel.Methods.Add(methodModel);
+            }
+        }
+
+        private void AnalyzeExplicitMethods(TypeDeclarationSyntax typeDeclarationSyntax, MemberOwningModel memberOwningModel)
         {
             List<MethodDeclarationSyntax> methodDeclarationSyntaxes = typeDeclarationSyntax
                 .DescendantNodes()
@@ -30,51 +50,62 @@ namespace csharp_to_json_converter.utils.analyzers
 
             foreach (MethodDeclarationSyntax methodDeclarationSyntax in methodDeclarationSyntaxes)
             {
-                var methodModel = new MethodModel();
-                
                 var methodSymbol = SemanticModel.GetDeclaredSymbol(methodDeclarationSyntax) as IMethodSymbol;
                 if (methodSymbol == null) { continue; }
 
-                methodModel.Name = methodDeclarationSyntax.Identifier.Text;
-                methodModel.Fqn = methodSymbol.ToString();
-                methodModel.Static = methodSymbol.IsStatic;
-                methodModel.Abstract = methodSymbol.IsAbstract;
-                methodModel.Sealed = methodSymbol.IsSealed;
-                methodModel.Async = methodSymbol.IsAsync;
-                methodModel.Override = methodSymbol.IsOverride;
-                methodModel.Virtual = methodSymbol.IsVirtual;
-                methodModel.Extern = methodSymbol.IsExtern;
-                methodModel.Accessibility = methodSymbol.DeclaredAccessibility.ToString();
-                methodModel.ReturnType = methodSymbol.ReturnType.ToString();
-                methodModel.FirstLineNumber = methodDeclarationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
-                methodModel.LastLineNumber = methodDeclarationSyntax.GetLocation().GetLineSpan().EndLinePosition.Line + 1;
-                methodModel.Partial = methodDeclarationSyntax.Modifiers.Any(modifier =>
-                    modifier.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PartialKeyword));
-                
-                if (IsExtensionMethod(methodDeclarationSyntax)) 
-                {
-                    methodModel.IsExtensionMethod = true;
-                    methodModel.ExtendsType = methodSymbol.Parameters[0].Type.ToString();
-                }
-                
+                var methodModel = CreateAndFillMethodModel(methodSymbol);
                 if (!methodSymbol.IsAbstract)
                 {
-                    var controlFlowGraph = ControlFlowGraph.Create(methodDeclarationSyntax, SemanticModel, CancellationToken.None);
-                    
-                    methodModel.IsImplementation = controlFlowGraph is not null;
-                    methodModel.CyclomaticComplexity = CalculateCyclomaticComplexity(controlFlowGraph);
+                    CalculateCyclomaticComplexity(methodDeclarationSyntax, methodModel);
                 }
-                
                 _invocationAnalyzer.ProcessInvocations(methodSymbol, methodModel);
                 _parameterAnalyzer.Analyze(methodSymbol, methodModel);
 
                 memberOwningModel.Methods.Add(methodModel);
             }
         }
-
-        private static int CalculateCyclomaticComplexity(ControlFlowGraph controlFlowGraph)
+        
+        private MethodModel CreateAndFillMethodModel(IMethodSymbol methodSymbol)
         {
-            if (controlFlowGraph == null) { return 0; } 
+            var methodModel = new MethodModel
+            {
+                Name = methodSymbol.Name,
+                Fqn = methodSymbol.ToString(),
+                Static = methodSymbol.IsStatic,
+                Abstract = methodSymbol.IsAbstract,
+                Sealed = methodSymbol.IsSealed,
+                Async = methodSymbol.IsAsync,
+                Override = methodSymbol.IsOverride,
+                Virtual = methodSymbol.IsVirtual,
+                Extern = methodSymbol.IsExtern,
+                Accessibility = methodSymbol.DeclaredAccessibility.ToString(),
+                ReturnType = methodSymbol.ReturnType.ToString(),
+                FirstLineNumber = methodSymbol.Locations[0].GetLineSpan().StartLinePosition.Line + 1,
+                LastLineNumber = methodSymbol.Locations[0].GetLineSpan().EndLinePosition.Line + 1,
+                Partial = methodSymbol.PartialDefinitionPart != null ||  methodSymbol.PartialImplementationPart != null
+            };
+
+            if (methodSymbol.IsExtensionMethod)
+            {
+                AnalyzeForExtensionMethod(methodSymbol, methodModel);
+            }
+            
+            return methodModel;
+        }
+
+        private static void AnalyzeForExtensionMethod(IMethodSymbol methodSymbol, MethodModel methodModel)
+        {
+            methodModel.IsExtensionMethod = true;
+            methodModel.ExtendsType = methodSymbol.Parameters[0].Type.ToString();
+        }
+
+        private void CalculateCyclomaticComplexity(MethodDeclarationSyntax methodDeclarationSyntax, MethodModel methodModel)
+        {
+            var controlFlowGraph = ControlFlowGraph.Create(methodDeclarationSyntax, SemanticModel, CancellationToken.None);
+                    
+            methodModel.IsImplementation = controlFlowGraph is not null;
+
+            if (controlFlowGraph == null) { return; } 
             
             int numberOfBlocks = controlFlowGraph.Blocks.Length;
             int numberOfEdges = 0;
@@ -90,16 +121,7 @@ namespace csharp_to_json_converter.utils.analyzers
                     numberOfEdges++;
                 }
             }
-            return numberOfEdges - numberOfBlocks + 2;
-        }
-
-        private static bool IsExtensionMethod(MethodDeclarationSyntax methodDeclarationSyntax)
-        {
-            if (methodDeclarationSyntax.ParameterList.Parameters.Count == 0) { return false; }
-            
-            //this Keyword to signal extension Method must be on the first Parameter
-            var firstParameter = methodDeclarationSyntax.ParameterList.Parameters[0];
-            return firstParameter.Modifiers.ToString().Contains("this");
+            methodModel.CyclomaticComplexity =  numberOfEdges - numberOfBlocks + 2;
         }
     }
 }
