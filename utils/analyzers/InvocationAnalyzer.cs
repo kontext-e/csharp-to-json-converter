@@ -15,21 +15,19 @@ namespace csharp_to_json_converter.utils.analyzers
         
         public void ProcessInvocations(IMethodSymbol methodSymbol, MethodModel methodModel)
         {
-            if (methodSymbol == null) return;
+            if (methodSymbol == null || methodSymbol.IsPartialDefinition) return;
 
             var callersAsync = SymbolFinder.FindCallersAsync(methodSymbol, _solution).Result;
             foreach (var caller in callersAsync)
             {
-                methodModel.InvokedBy.Add(new InvocationModel { MethodId = caller.CallingSymbol.ToString() });
-            }
-        }
-
-        public void ProcessPropertyAccesses(IPropertySymbol propertySymbol, PropertyModel propertyModel)
-        {
-            var callers = SymbolFinder.FindCallersAsync(propertySymbol, _solution).Result;
-            foreach (var caller in callers)
-            {
-                propertyModel.Accesses.Add(new InvocationModel { MethodId = caller.CallingSymbol.ToString() } );
+                foreach (var location in caller.Locations)
+                {
+                    methodModel.InvokedBy.Add(new InvocationModel
+                    {
+                        MethodId = caller.CallingSymbol.ToString(),
+                        LineNumber = location.GetLineSpan().StartLinePosition.Line + 1
+                    });
+                }
             }
         }
     }
