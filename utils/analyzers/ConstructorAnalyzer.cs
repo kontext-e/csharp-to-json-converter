@@ -24,11 +24,11 @@ namespace csharp_to_json_converter.utils.analyzers
 
             foreach (var constructor in namedTypeSymbol.InstanceConstructors)
             {
-                AnalyzeInstanceConstructors(constructor, typeDeclarationSyntax, memberOwningModel);                
+                AnalyzeConstructors(constructor, typeDeclarationSyntax, memberOwningModel);                
             }
         }
 
-        private void AnalyzeInstanceConstructors(IMethodSymbol methodSymbol, TypeDeclarationSyntax typeDeclarationSyntax, MemberOwningModel memberOwningModel)
+        private void AnalyzeConstructors(IMethodSymbol methodSymbol, TypeDeclarationSyntax typeDeclarationSyntax, MemberOwningModel memberOwningModel)
         {
                 var constructorModel = CreateConstructorModel(methodSymbol);
                 _invocationAnalyzer.ProcessInvocations(methodSymbol, constructorModel);

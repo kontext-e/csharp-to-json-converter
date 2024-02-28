@@ -41,9 +41,10 @@ namespace csharp_to_json_converter.utils.analyzers
                         Volatile = fieldSymbol.IsVolatile
                     };
 
-                    if (fieldSymbol.HasConstantValue)
+                    var literals = variableDeclaratorSyntax.DescendantNodes().OfType<LiteralExpressionSyntax>().ToList();
+                    if (literals.Any())
                     {
-                        fieldModel.ConstantValue = fieldSymbol.ConstantValue?.ToString();
+                        fieldModel.ConstantValue = literals[0].Token.Value.ToString();
                     }
 
                     fieldModel.Accessibility = fieldSymbol.DeclaredAccessibility.ToString();
