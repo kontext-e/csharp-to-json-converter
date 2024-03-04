@@ -50,15 +50,17 @@ namespace csharp_to_json_converter.utils.analyzers
 
             foreach (MethodDeclarationSyntax methodDeclarationSyntax in methodDeclarationSyntaxes)
             {
-                var methodSymbol = SemanticModel.GetDeclaredSymbol(methodDeclarationSyntax) as IMethodSymbol;
-                if (methodSymbol == null) { continue; }
+                if (SemanticModel.GetDeclaredSymbol(methodDeclarationSyntax) is not IMethodSymbol methodSymbol) { continue; }
 
                 var methodModel = CreateAndFillMethodModel(methodSymbol);
                 if (!methodSymbol.IsAbstract)
                 {
                     CalculateCyclomaticComplexity(methodDeclarationSyntax, methodModel);
                 }
+                
                 _invocationAnalyzer.ProcessInvocations(methodSymbol, methodModel);
+                _invocationAnalyzer.ProcessImplicitObjectCreations(methodDeclarationSyntax, methodSymbol, methodModel);
+                _invocationAnalyzer.ProcessArrayCreations(methodDeclarationSyntax, methodModel);
                 _parameterAnalyzer.Analyze(methodSymbol, methodModel);
 
                 memberOwningModel.Methods.Add(methodModel);
