@@ -2,7 +2,7 @@
 
 ## Selection of the C#-Parser
 
-For the implementation of the [C# plugin](https://github.com/softvis-research/jqa-csharp-plugin) we looked at three different parsers:
+For the implementation of the [C# plugin](https://github.com/kontext-e/jqa-csharp-plugin) we looked at three different parsers:
 
 * [Roslyn](https://github.com/dotnet/roslyn)
 * [Babelfish](https://github.com/bblfsh)
