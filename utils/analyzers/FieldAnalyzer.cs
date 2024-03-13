@@ -2,6 +2,7 @@
 using System.Linq;
 using csharp_to_json_converter.model;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace csharp_to_json_converter.utils.analyzers
@@ -19,11 +20,11 @@ namespace csharp_to_json_converter.utils.analyzers
                 .OfType<FieldDeclarationSyntax>()
                 .ToList();
 
-            foreach (FieldDeclarationSyntax fieldDeclarationSyntax in fieldDeclarationSyntaxes)
+            foreach (var fieldDeclarationSyntax in fieldDeclarationSyntaxes)
             {
-                foreach (VariableDeclaratorSyntax variableDeclaratorSyntax in fieldDeclarationSyntax.Declaration.Variables)
+                foreach (var variableDeclaratorSyntax in fieldDeclarationSyntax.Declaration.Variables)
                 {
-                    IFieldSymbol fieldSymbol = SemanticModel.GetDeclaredSymbol(variableDeclaratorSyntax) as IFieldSymbol;
+                    var fieldSymbol = ModelExtensions.GetDeclaredSymbol(SemanticModel, variableDeclaratorSyntax) as IFieldSymbol;
                     if (fieldSymbol == null) { continue; }
 
                     var fieldModel = new FieldModel
@@ -44,7 +45,7 @@ namespace csharp_to_json_converter.utils.analyzers
                     var literals = variableDeclaratorSyntax.DescendantNodes().OfType<LiteralExpressionSyntax>().ToList();
                     if (literals.Any())
                     {
-                        fieldModel.ConstantValue = literals[0].Token.Value.ToString();
+                        fieldModel.ConstantValue = literals[0].Token.IsKind(SyntaxKind.NullLiteralExpression) ? "null" : literals[0].Token.Value?.ToString();
                     }
 
                     fieldModel.Accessibility = fieldSymbol.DeclaredAccessibility.ToString();

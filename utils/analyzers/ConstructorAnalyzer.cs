@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using csharp_to_json_converter.model;
+using csharp_to_json_converter.utils.ExtensionMethods;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -44,7 +45,7 @@ namespace csharp_to_json_converter.utils.analyzers
             var constructorModel = new ConstructorModel
             {
                 Name = methodSymbol.MetadataName,
-                Fqn = methodSymbol.ToString(),
+                Fqn = methodSymbol.getFqn(),
                 ReturnType = methodSymbol.ContainingType.ToString(),
                 Static = methodSymbol.IsStatic,
                 Abstract = methodSymbol.IsAbstract,

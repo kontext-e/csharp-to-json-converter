@@ -44,11 +44,11 @@ namespace csharp_to_json_converter.utils.analyzers
 
             foreach (var objectCreation in objectCreations)
             {
-                var objectCreationSymbol = SemanticModel.FindSymbolInfoOrUseSingleCandidate(objectCreation) as IMethodSymbol;
+                if (SemanticModel.FindSymbolInfoOrUseSingleCandidate(objectCreation) is not IMethodSymbol objectCreationSymbol) { continue; }
 
                 methodModel.Invokes.Add(new InvocationModel
                 {
-                    MethodId = objectCreationSymbol.ToString(),
+                    MethodId = objectCreationSymbol.getFqn(),
                     LineNumber = objectCreation.GetLocation().GetLineSpan().StartLinePosition.Line + 1
                 });
             }
