@@ -1,12 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using csharp_to_json_converter.model;
 using csharp_to_json_converter.utils.analyzers;
 using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.MSBuild;
 using NLog;
+using ShellProgressBar;
 
 namespace csharp_to_json_converter.utils
 {
@@ -87,15 +88,23 @@ namespace csharp_to_json_converter.utils
 
         private void AnalyzeScripts()
         {
-            foreach (var project in _solution.Projects) 
+            var numberOfFiles = CountFiles();
+            var options = new ProgressBarOptions { ProgressCharacter = '-', ProgressBarOnBottom = true };
+            using (var progressbar = new ProgressBar(numberOfFiles, "Analyzing Scripts", options))
             {
-                foreach (var fileInfo in project.Documents) 
+                foreach (var project in _solution.Projects) 
                 {
-                    if (fileInfo.FilePath!.Contains("obj") || fileInfo.FilePath.Contains("bin") || fileInfo.FilePath.Contains(".nuget")) continue;
-                    AnalyzeScript(project, fileInfo);
+                    foreach (var fileInfo in project.Documents) 
+                    {
+                        if (fileInfo.FilePath!.Contains("obj") || fileInfo.FilePath.Contains("bin") || fileInfo.FilePath.Contains(".nuget")) continue;
+                        AnalyzeScript(project, fileInfo);
+                        progressbar.Tick("Analyzing Script:" + fileInfo.FilePath);
+                    }
                 }
             }
         }
+
+        private int CountFiles() => _solution.Projects.Sum(project => project.Documents.Count());
 
         private void AnalyzeScript(Project project, Document fileInfo)
         {
