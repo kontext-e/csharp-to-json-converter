@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using csharp_to_json_converter.model;
@@ -7,7 +8,6 @@ using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.MSBuild;
 using NLog;
-using ShellProgressBar;
 
 namespace csharp_to_json_converter.utils
 {
@@ -88,23 +88,25 @@ namespace csharp_to_json_converter.utils
 
         private void AnalyzeScripts()
         {
-            var numberOfFiles = CountFiles();
-            var options = new ProgressBarOptions { ProgressCharacter = '-', ProgressBarOnBottom = true };
-            using (var progressbar = new ProgressBar(numberOfFiles, "Analyzing Scripts", options))
+            var files = CountFiles();
+            var scannedFiles = 0;
+            foreach (var project in _solution.Projects)
             {
-                foreach (var project in _solution.Projects) 
+                foreach (var fileInfo in project.Documents)
                 {
-                    foreach (var fileInfo in project.Documents) 
-                    {
-                        if (fileInfo.FilePath!.Contains("obj") || fileInfo.FilePath.Contains("bin") || fileInfo.FilePath.Contains(".nuget")) continue;
-                        AnalyzeScript(project, fileInfo);
-                        progressbar.Tick("Analyzing Script:" + fileInfo.FilePath);
-                    }
+                    if (fileInfo.FilePath!.Contains("obj") || fileInfo.FilePath.Contains("bin") ||
+                        fileInfo.FilePath.Contains(".nuget")) continue;
+                    AnalyzeScript(project, fileInfo);
+                    Logger.Info("Analyzed Script " + ++scannedFiles + "/" + files + ": " + fileInfo.Name);
                 }
             }
         }
 
-        private int CountFiles() => _solution.Projects.Sum(project => project.Documents.Count());
+        private int CountFiles() =>  _solution.Projects.Sum(
+            project => project.Documents.Count(
+                fileInfo => !fileInfo.FilePath!.Contains("obj") 
+                            && !fileInfo.FilePath.Contains("bin") 
+                            && !fileInfo.FilePath.Contains(".nuget")));
 
         private void AnalyzeScript(Project project, Document fileInfo)
         {
