@@ -52,7 +52,7 @@ namespace csharp_to_json_converter.utils.analyzers
             {
                 if (SemanticModel.GetDeclaredSymbol(methodDeclarationSyntax) is not IMethodSymbol methodSymbol) { continue; }
 
-                var methodModel = CreateAndFillMethodModel(methodSymbol);
+                var methodModel = CreateAndFillMethodModel(methodSymbol, methodDeclarationSyntax);
                 if (!methodSymbol.IsAbstract)
                 {
                     CalculateCyclomaticComplexity(methodDeclarationSyntax, methodModel);
@@ -67,7 +67,8 @@ namespace csharp_to_json_converter.utils.analyzers
             }
         }
         
-        private MethodModel CreateAndFillMethodModel(IMethodSymbol methodSymbol)
+        private MethodModel CreateAndFillMethodModel(IMethodSymbol methodSymbol,
+            MethodDeclarationSyntax methodDeclarationSyntax = null)
         {
             var methodModel = new MethodModel
             {
@@ -82,8 +83,8 @@ namespace csharp_to_json_converter.utils.analyzers
                 Extern = methodSymbol.IsExtern,
                 Accessibility = methodSymbol.DeclaredAccessibility.ToString(),
                 ReturnType = methodSymbol.ReturnType.ToString(),
-                FirstLineNumber = methodSymbol.Locations[0].GetLineSpan().StartLinePosition.Line + 1,
-                LastLineNumber = methodSymbol.Locations[0].GetLineSpan().EndLinePosition.Line + 1,
+                FirstLineNumber = methodDeclarationSyntax?.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
+                LastLineNumber = methodDeclarationSyntax?.GetLocation().GetLineSpan().EndLinePosition.Line + 1,
                 Partial = methodSymbol.PartialDefinitionPart != null ||  methodSymbol.PartialImplementationPart != null
             };
 
