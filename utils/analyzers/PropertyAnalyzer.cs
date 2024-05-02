@@ -22,10 +22,6 @@ namespace csharp_to_json_converter.utils.analyzers
                 // Partial Properties are not (yet) allowed, so there can't be more than one declaration
                 var propertyDeclaration = propertyDeclarations.FirstOrDefault()?.GetSyntax() as PropertyDeclarationSyntax;
                 var propertyModel = FillPropertyModel(propertySymbol, propertyDeclaration);
-                Console.WriteLine(propertyDeclaration?.Type);
-                Console.WriteLine(string.Join(", ", propertyModel.Type));
-                Console.WriteLine(member.ToDisplayString());
-                Console.WriteLine();
                 memberOwningModel.Properties.Add(propertyModel);
             }
         }
@@ -52,14 +48,21 @@ namespace csharp_to_json_converter.utils.analyzers
         private static IEnumerable<string> AnalyzePropertyType(IPropertySymbol propertySymbol)
         {
             var types = new List<string>();
-            
             if (propertySymbol.Type is not INamedTypeSymbol propertyTypeSymbol) return types;
-
-            var nullableType = propertyTypeSymbol.NullableAnnotation == NullableAnnotation.Annotated;
-            types.Add(propertyTypeSymbol.ConstructedFrom.ToDisplayString() + (nullableType ? "?" : ""));
-            types.AddRange(propertyTypeSymbol.TypeArguments
-                .Select(t => t.ToDisplayString() + (t.NullableAnnotation == NullableAnnotation.Annotated ? "?" : "")));
+            AnalyzeGenericType(propertyTypeSymbol, types);
             return types;
+        }
+
+        private static void AnalyzeGenericType(INamedTypeSymbol namedTypeSymbol, List<string> types)
+        {
+            var nullableType = namedTypeSymbol.NullableAnnotation == NullableAnnotation.Annotated;
+            types.Add(namedTypeSymbol.ConstructedFrom.ToDisplayString() + (nullableType ? "?" : ""));
+
+            foreach (var type in namedTypeSymbol.TypeArguments.Cast<INamedTypeSymbol>())
+            {
+                AnalyzeGenericType(type, types);
+            }
+            
         }
     }
 }
