@@ -36,7 +36,7 @@ namespace csharp_to_json_converter.utils.analyzers
             {
                 Name = propertySymbol.Name,
                 Fqn = propertySymbol.ToString(),
-                Type = AnalyzePropertyType(propertySymbol, propertyDeclaration),
+                Type = AnalyzePropertyType(propertySymbol),
                 Sealed = propertySymbol.IsSealed,
                 Static = propertySymbol.IsStatic,
                 Override = propertySymbol.IsOverride,
@@ -49,85 +49,15 @@ namespace csharp_to_json_converter.utils.analyzers
             return propertyModel;
         }
 
-        private List<string> AnalyzePropertyType(IPropertySymbol propertySymbol, PropertyDeclarationSyntax propertyDeclaration){
-            if (propertyDeclaration == null) return new List<string>();
-            
-            var genericNameSyntax = FindGenericNameSyntax(propertyDeclaration);
-
+        private static IEnumerable<string> AnalyzePropertyType(IPropertySymbol propertySymbol)
+        {
             var types = new List<string>();
-            if (genericNameSyntax != null)
-            {
-                AnalyzeGenericTypeRecursively(genericNameSyntax, types);
-            }
-            else
-            {
-                types.Add(propertySymbol.Type.ToString());
-            }
             
+            if (propertySymbol.Type is not INamedTypeSymbol propertyTypeSymbol) return types; 
+
+            types.Add(propertyTypeSymbol.ConstructedFrom.ToDisplayString());
+            types.AddRange(propertyTypeSymbol.TypeArguments.Select(t => t.ToDisplayString()));
             return types;
-        }
-        
-        private static GenericNameSyntax FindGenericNameSyntax(PropertyDeclarationSyntax propertyDeclaration)
-        {
-            var genericNameSyntax = new List<GenericNameSyntax>();
-            
-            //Generic Syntax can either be direct node of propertyDeclaration
-            genericNameSyntax.AddRange(propertyDeclaration
-                .ChildNodes()
-                .OfType<GenericNameSyntax>()
-                .ToList());
-            
-            //Or wrapped in NullableTypeSyntax
-            genericNameSyntax.AddRange(propertyDeclaration
-                .ChildNodes()
-                .OfType<NullableTypeSyntax>()
-                .FirstOrDefault()? //NullableType can only exist once as child of PropertyDeclarationSyntax 
-                .ChildNodes()
-                .OfType<GenericNameSyntax>()
-                .ToList() ?? new List<GenericNameSyntax>());
-            
-            //GenericTypeSyntax (wrapped or not) can only exist once as child of PropertyDeclarationSyntax
-            return genericNameSyntax.FirstOrDefault();
-        }
-
-        private void AnalyzeGenericTypeRecursively(GenericNameSyntax genericNameSyntax, List<string> types)
-        {
-            var symbol = SemanticModel.GetSymbolInfo(genericNameSyntax).Symbol as INamedTypeSymbol;
-            types.Add(symbol?.ConstructedFrom.ToDisplayString());
-        
-            var typeArguments = genericNameSyntax?
-                .ChildNodes()
-                .OfType<TypeArgumentListSyntax>()
-                .ToList();
-            
-            foreach (var typeArgument in typeArguments)
-            {
-                AnalyzeNestedGenericType(types, typeArgument);
-                AnalyzeNonGenericTypes(types, typeArgument);
-            }
-        }
-
-        private void AnalyzeNestedGenericType(List<string> types, TypeArgumentListSyntax typeArgument)
-        {
-            var nestedGenericTypes = typeArgument.ChildNodes().OfType<GenericNameSyntax>().ToList();
-            if (nestedGenericTypes.Count <= 0) return;
-            foreach (var genericType in nestedGenericTypes)
-            {
-                AnalyzeGenericTypeRecursively(genericType, types);
-            }
-        }
-
-        private void AnalyzeNonGenericTypes(ICollection<string> types, TypeArgumentListSyntax typeArgument)
-        {
-            foreach (var identifierNameSyntax in typeArgument.ChildNodes().OfType<IdentifierNameSyntax>())
-            {
-                types.Add(SemanticModel.GetSymbolInfo(identifierNameSyntax).Symbol?.ToDisplayString());
-            }
-        
-            foreach (var predefinedTypeSyntax in typeArgument.ChildNodes().OfType<PredefinedTypeSyntax>())
-            {
-                types.Add(SemanticModel.GetSymbolInfo(predefinedTypeSyntax).Symbol?.ToDisplayString());
-            }
         }
     }
 }
