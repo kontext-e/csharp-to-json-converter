@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using csharp_to_json_converter.model;
+using csharp_to_json_converter.utils.ExtensionMethods;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -31,7 +32,7 @@ namespace csharp_to_json_converter.utils.analyzers
                     {
                         Name = fieldSymbol.Name,
                         Fqn = fieldSymbol.ToString(),
-                        Type = fieldSymbol.Type.ToString(),
+                        Types = AnalyzeFieldType(fieldSymbol),
                         Static = fieldSymbol.IsStatic,
                         Abstract = fieldSymbol.IsAbstract,
                         Sealed = fieldSymbol.IsSealed,
@@ -53,5 +54,13 @@ namespace csharp_to_json_converter.utils.analyzers
                 }
             }
         }
+
+        private static IEnumerable<string> AnalyzeFieldType(IFieldSymbol fieldSymbol)
+        {
+            return fieldSymbol.Type is not INamedTypeSymbol fieldTypeSymbol
+                ? new List<string>()
+                : fieldTypeSymbol.GetAllTypes();
+        }
+        
     }
 }

@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using csharp_to_json_converter.model;
+using csharp_to_json_converter.utils.ExtensionMethods;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace csharp_to_json_converter.utils.analyzers
 {
@@ -17,22 +17,19 @@ namespace csharp_to_json_converter.utils.analyzers
             {
                 if (member is not IPropertySymbol propertySymbol) { continue; }
                 
-                var propertyDeclarations = propertySymbol.DeclaringSyntaxReferences;
-                // Conditional Access because auto-generated Properties have no syntax
-                // Partial Properties are not (yet) allowed, so there can't be more than one declaration
-                var propertyDeclaration = propertyDeclarations.FirstOrDefault()?.GetSyntax() as PropertyDeclarationSyntax;
-                var propertyModel = FillPropertyModel(propertySymbol, propertyDeclaration);
+                var propertyModel = FillPropertyModel(propertySymbol);
+                Console.WriteLine(string.Join(", ", propertyModel.Types));
                 memberOwningModel.Properties.Add(propertyModel);
             }
         }
 
-        private PropertyModel FillPropertyModel(IPropertySymbol propertySymbol, PropertyDeclarationSyntax propertyDeclaration)
+        private PropertyModel FillPropertyModel(IPropertySymbol propertySymbol)
         {
             var propertyModel = new PropertyModel
             {
                 Name = propertySymbol.Name,
                 Fqn = propertySymbol.ToString(),
-                Type = AnalyzePropertyType(propertySymbol),
+                Types = AnalyzePropertyType(propertySymbol),
                 Sealed = propertySymbol.IsSealed,
                 Static = propertySymbol.IsStatic,
                 Override = propertySymbol.IsOverride,
@@ -47,22 +44,9 @@ namespace csharp_to_json_converter.utils.analyzers
 
         private static IEnumerable<string> AnalyzePropertyType(IPropertySymbol propertySymbol)
         {
-            var types = new List<string>();
-            if (propertySymbol.Type is not INamedTypeSymbol propertyTypeSymbol) return types;
-            AnalyzeGenericType(propertyTypeSymbol, types);
-            return types;
-        }
-
-        private static void AnalyzeGenericType(INamedTypeSymbol namedTypeSymbol, List<string> types)
-        {
-            var nullableType = namedTypeSymbol.NullableAnnotation == NullableAnnotation.Annotated;
-            types.Add(namedTypeSymbol.ConstructedFrom.ToDisplayString() + (nullableType ? "?" : ""));
-
-            foreach (var type in namedTypeSymbol.TypeArguments.Cast<INamedTypeSymbol>())
-            {
-                AnalyzeGenericType(type, types);
-            }
-            
+            return propertySymbol.Type is not INamedTypeSymbol propertyTypeSymbol
+                ? new List<string>()
+                : propertyTypeSymbol.GetAllTypes();
         }
     }
 }
