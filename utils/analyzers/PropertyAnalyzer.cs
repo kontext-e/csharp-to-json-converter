@@ -53,10 +53,12 @@ namespace csharp_to_json_converter.utils.analyzers
         {
             var types = new List<string>();
             
-            if (propertySymbol.Type is not INamedTypeSymbol propertyTypeSymbol) return types; 
+            if (propertySymbol.Type is not INamedTypeSymbol propertyTypeSymbol) return types;
 
-            types.Add(propertyTypeSymbol.ConstructedFrom.ToDisplayString());
-            types.AddRange(propertyTypeSymbol.TypeArguments.Select(t => t.ToDisplayString()));
+            var nullableType = propertyTypeSymbol.NullableAnnotation == NullableAnnotation.Annotated;
+            types.Add(propertyTypeSymbol.ConstructedFrom.ToDisplayString() + (nullableType ? "?" : ""));
+            types.AddRange(propertyTypeSymbol.TypeArguments
+                .Select(t => t.ToDisplayString() + (t.NullableAnnotation == NullableAnnotation.Annotated ? "?" : "")));
             return types;
         }
     }
