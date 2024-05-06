@@ -59,7 +59,6 @@ namespace csharp_to_json_converter.utils.analyzers
                 }
                 
                 _invocationAnalyzer.ProcessInvocations(methodSymbol, methodModel);
-                _invocationAnalyzer.ProcessImplicitObjectCreations(methodDeclarationSyntax, methodSymbol, methodModel);
                 _invocationAnalyzer.ProcessArrayCreations(methodDeclarationSyntax, methodModel);
                 _parameterAnalyzer.Analyze(methodSymbol, methodModel);
 

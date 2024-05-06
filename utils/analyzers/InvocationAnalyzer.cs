@@ -38,22 +38,6 @@ namespace csharp_to_json_converter.utils.analyzers
             }).ToList();
         }
 
-        public void ProcessImplicitObjectCreations(MethodDeclarationSyntax methodDeclarationSyntax, IMethodSymbol methodSymbol, MethodModel methodModel)
-        {
-            var objectCreations = methodDeclarationSyntax.DescendantNodes().OfType<ImplicitObjectCreationExpressionSyntax>().ToList();
-
-            foreach (var objectCreation in objectCreations)
-            {
-                if (SemanticModel.FindSymbolInfoOrUseSingleCandidate(objectCreation) is not IMethodSymbol objectCreationSymbol) { continue; }
-
-                methodModel.Invokes.Add(new InvocationModel
-                {
-                    MethodId = objectCreationSymbol.getFqn(),
-                    LineNumber = objectCreation.GetLocation().GetLineSpan().StartLinePosition.Line + 1
-                });
-            }
-        }
-
         public void ProcessArrayCreations(MethodDeclarationSyntax methodDeclarationSyntax, MethodModel methodModel)
         {
             var arrayCreations = methodDeclarationSyntax.DescendantNodes().OfType<VariableDeclarationSyntax>().ToList();

@@ -18,7 +18,6 @@ namespace csharp_to_json_converter.utils.analyzers
                 if (member is not IPropertySymbol propertySymbol) { continue; }
                 
                 var propertyModel = FillPropertyModel(propertySymbol);
-                Console.WriteLine(string.Join(", ", propertyModel.Types));
                 memberOwningModel.Properties.Add(propertyModel);
             }
         }
