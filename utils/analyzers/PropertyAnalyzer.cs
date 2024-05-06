@@ -43,9 +43,15 @@ namespace csharp_to_json_converter.utils.analyzers
 
         private static IEnumerable<string> AnalyzePropertyType(IPropertySymbol propertySymbol)
         {
-            return propertySymbol.Type is not INamedTypeSymbol propertyTypeSymbol
-                ? new List<string>()
-                : propertyTypeSymbol.GetAllTypes();
+            switch (propertySymbol.Type)
+            {
+                case INamedTypeSymbol fieldTypeSymbol:
+                    return fieldTypeSymbol.GetAllTypes(propertySymbol);
+                case ITypeParameterSymbol typeParameterSymbol:
+                    return typeParameterSymbol.GetAllTypes(propertySymbol);
+                default:
+                    return new List<string>();
+            }
         }
     }
 }

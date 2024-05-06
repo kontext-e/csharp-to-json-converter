@@ -57,9 +57,15 @@ namespace csharp_to_json_converter.utils.analyzers
 
         private static IEnumerable<string> AnalyzeFieldType(IFieldSymbol fieldSymbol)
         {
-            return fieldSymbol.Type is not INamedTypeSymbol fieldTypeSymbol
-                ? new List<string>()
-                : fieldTypeSymbol.GetAllTypes();
+            switch (fieldSymbol.Type)
+            {
+                case INamedTypeSymbol fieldTypeSymbol:
+                    return fieldTypeSymbol.GetAllTypes(fieldSymbol);
+                case ITypeParameterSymbol typeParameterSymbol:
+                    return typeParameterSymbol.GetAllTypes(fieldSymbol);
+                default:
+                    return new List<string>();
+            }
         }
         
     }
