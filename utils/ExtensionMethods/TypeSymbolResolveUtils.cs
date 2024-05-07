@@ -7,6 +7,18 @@ namespace csharp_to_json_converter.utils.ExtensionMethods;
 
 public static class TypeSymbolResolveUtils
 {
+
+    // Entrypoint to "GetAllTypes(this INamedTypeSymbol namedTypeSymbol, ISymbol symbol)"
+    // for when Main type of member is Array of Generic type,
+    // I.e. if:
+    // public class foo<T> { private T[] bar { get; set; } }
+    public static IEnumerable<string> GetAllTypes(this IArrayTypeSymbol arrayTypeSymbol, ISymbol symbol)
+    {
+        var allTypes = new List<string>();
+        allTypes.AddRange(AnalyzeArrayTypes(symbol, arrayTypeSymbol));
+        return allTypes;
+        
+    }
     
     // Entrypoint to "GetAllTypes(this INamedTypeSymbol namedTypeSymbol, ISymbol symbol)" for when Main type of member is Generic type,
     // I.e. if:
@@ -37,27 +49,68 @@ public static class TypeSymbolResolveUtils
         var nullableType = namedTypeSymbol.NullableAnnotation == NullableAnnotation.Annotated;
         allTypes.Add(namedTypeSymbol.ConstructedFrom.ToDisplayString() + (nullableType ? "?" : ""));
 
-        var typeArguments = symbol.ContainingType.TypeArguments.ToList();
+        allTypes.AddRange(AnalyzeNestedTypes(namedTypeSymbol, symbol));
 
+        return allTypes;
+    }
+
+    private static List<string> AnalyzeNestedTypes(INamedTypeSymbol namedTypeSymbol, ISymbol symbol)
+    {
+        var allTypes = new List<string>();
+        var typeArguments = symbol.ContainingType.TypeArguments.ToList();
+        
         foreach (var typeArgument in namedTypeSymbol.TypeArguments)
         {
+            // Case of TypeArgument
             if (TypeArgumentIsFromContainingGenericType(typeArguments, typeArgument))
             {
-                foreach (var constraintType in LookUpTypeArgumentConstraints(typeArguments, typeArgument))
-                {
-                    allTypes.AddRange(GetAllTypes((INamedTypeSymbol) constraintType, symbol));
-                }
+                allTypes.AddRange(AnalyzeGenericTypes(symbol, typeArgument, typeArguments));
             }
+            // Case of ArrayType
+            else if (typeArgument is IArrayTypeSymbol arrayType)
+            {
+                allTypes.AddRange(AnalyzeArrayTypes(symbol, arrayType));
+            }
+            // Case of 'Normal' Type
             else
             {
-                allTypes.AddRange(GetAllTypes((INamedTypeSymbol) typeArgument, symbol));
+                allTypes.AddRange(GetAllTypes((INamedTypeSymbol)typeArgument, symbol));
             }
         }
 
         return allTypes;
     }
 
-    //  
+    private static List<string> AnalyzeArrayTypes(ISymbol symbol, IArrayTypeSymbol arrayType)
+    {
+        var allTypes = new List<string>();
+        var typeArguments = symbol.ContainingType.TypeArguments.ToList();
+        switch (arrayType.ElementType)
+        {
+            case INamedTypeSymbol:
+                allTypes.Add(arrayType.ToDisplayString());
+                break;
+            case ITypeParameterSymbol:
+                allTypes.AddRange(AnalyzeGenericTypes(symbol, arrayType, typeArguments));
+                break;
+        }
+
+        return allTypes;
+    }
+
+    private static List<string> AnalyzeGenericTypes(ISymbol symbol, ITypeSymbol typeSymbol, List<ITypeSymbol> typeArguments)
+    {
+        var allTypes = new List<string>();
+
+        var type = typeSymbol is IArrayTypeSymbol arrayTypeSymbol ? arrayTypeSymbol.ElementType : typeSymbol;
+        foreach (var constraintType in LookUpTypeArgumentConstraints(typeArguments, type))
+        {
+            allTypes.AddRange(GetAllTypes((INamedTypeSymbol)constraintType, symbol));
+        }
+
+        return allTypes;
+    }
+
     private static ImmutableArray<ITypeSymbol> LookUpTypeArgumentConstraints(List<ITypeSymbol> typeArguments, ITypeSymbol typeArgument)
     {
         var typeArgumentSymbol = (ITypeParameterSymbol) typeArguments.Find(t => t.MetadataName == typeArgument.MetadataName);

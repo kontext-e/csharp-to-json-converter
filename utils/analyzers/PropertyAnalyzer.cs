@@ -49,6 +49,8 @@ namespace csharp_to_json_converter.utils.analyzers
                     return fieldTypeSymbol.GetAllTypes(propertySymbol);
                 case ITypeParameterSymbol typeParameterSymbol:
                     return typeParameterSymbol.GetAllTypes(propertySymbol);
+                case IArrayTypeSymbol arrayTypeSymbol:
+                    return arrayTypeSymbol.GetAllTypes(propertySymbol);
                 default:
                     return new List<string>();
             }
