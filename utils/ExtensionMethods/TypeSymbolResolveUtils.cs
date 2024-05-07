@@ -8,16 +8,15 @@ namespace csharp_to_json_converter.utils.ExtensionMethods;
 public static class TypeSymbolResolveUtils
 {
 
+    #region Entrypoints for TypeAnalysis
+
     // Entrypoint to "GetAllTypes(this INamedTypeSymbol namedTypeSymbol, ISymbol symbol)"
     // for when Main type of member is Array of Generic type,
     // I.e. if:
     // public class foo<T> { private T[] bar { get; set; } }
     public static IEnumerable<string> GetAllTypes(this IArrayTypeSymbol arrayTypeSymbol, ISymbol symbol)
     {
-        var allTypes = new List<string>();
-        allTypes.AddRange(AnalyzeArrayTypes(symbol, arrayTypeSymbol));
-        return allTypes;
-        
+        return AnalyzeArrayTypes(symbol, arrayTypeSymbol);
     }
     
     // Entrypoint to "GetAllTypes(this INamedTypeSymbol namedTypeSymbol, ISymbol symbol)" for when Main type of member is Generic type,
@@ -53,6 +52,10 @@ public static class TypeSymbolResolveUtils
 
         return allTypes;
     }
+
+    #endregion
+
+    #region Analyzers for different Type Declarations
 
     private static List<string> AnalyzeNestedTypes(INamedTypeSymbol namedTypeSymbol, ISymbol symbol)
     {
@@ -111,6 +114,10 @@ public static class TypeSymbolResolveUtils
         return allTypes;
     }
 
+    #endregion
+
+    #region Helpers
+
     private static ImmutableArray<ITypeSymbol> LookUpTypeArgumentConstraints(List<ITypeSymbol> typeArguments, ITypeSymbol typeArgument)
     {
         var typeArgumentSymbol = (ITypeParameterSymbol) typeArguments.Find(t => t.MetadataName == typeArgument.MetadataName);
@@ -122,4 +129,6 @@ public static class TypeSymbolResolveUtils
     {
         return typeArguments.Select(argument => argument.MetadataName).Contains(typeArgument.MetadataName);
     }
+
+    #endregion
 }

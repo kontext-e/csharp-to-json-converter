@@ -66,14 +66,27 @@ namespace csharp_to_json_converter.utils
 
         private void ReadProjects()
         {
+            var hasErrors = false;
             foreach (var project in _solution.Projects)
             {
                 var compilation = project.GetCompilationAsync().Result;
                 if (compilation == null) continue;
-                
+
+                foreach (var diagnostic in compilation.GetDiagnostics()
+                             .Where(diagnostic => diagnostic.Severity >= DiagnosticSeverity.Error))
+                {
+                    hasErrors = true;
+                    Logger.Error(diagnostic.Descriptor.Description);
+                }
                 _compilation[project.FilePath!] = compilation;
                 ReadSyntaxTrees(compilation);
             }
+            
+            if (hasErrors)
+            {
+                Logger.Error("Scan and Analysis will be flawed if Compilation has Errors. It is highly reccomended to fix all Errors");
+            }
+
         }
 
         private void ReadSyntaxTrees(Compilation compilation)
