@@ -27,7 +27,7 @@ namespace csharp_to_json_converter
         {
             if (SetupEnvironment(args, out var parserResult)) return;
             var (inputDirectory, outputDirectory) = PrepareIO(parserResult);
-            var fileModelList = AnalyzeFiles(inputDirectory);
+            var fileModelList = AnalyzeProjects(inputDirectory);
             WriteFiles(outputDirectory, fileModelList, inputDirectory);
         }
 
@@ -36,7 +36,7 @@ namespace csharp_to_json_converter
             DirectoryInfo inputDirectory = null;
             DirectoryInfo outputDirectory = null;
 
-            parserResult.WithParsed((commandLineArguments) =>
+            parserResult.WithParsed(commandLineArguments =>
             {
                 inputDirectory = new DirectoryInfo(commandLineArguments.InputDirectory);
                 outputDirectory = new DirectoryInfo(commandLineArguments.OutputDirectory);
@@ -55,34 +55,34 @@ namespace csharp_to_json_converter
             return true;
         }
 
-        private static void WriteFiles(DirectoryInfo outputDirectory, List<FileModel> fileModelList, DirectoryInfo inputDirectory)
+        private static void WriteFiles(DirectoryInfo outputDirectory, List<ProjectModel> projectModelList, DirectoryInfo inputDirectory)
         {
             Logger.Info("Writing model to JSON in '{0}' ...", outputDirectory.FullName);
-            WriteModelToJson(fileModelList, inputDirectory, outputDirectory);
+            WriteModelToJson(projectModelList, inputDirectory, outputDirectory);
             Logger.Info("Finished writing model to JSON.");
         }
 
-        private static List<FileModel> AnalyzeFiles(DirectoryInfo inputDirectory)
+        private static List<ProjectModel> AnalyzeProjects(DirectoryInfo inputDirectory)
         {
             Analyzer analyzer = new Analyzer(inputDirectory);
-            List<FileModel> fileModelList = analyzer.Analyze();
-            return fileModelList;
+            List<ProjectModel> projectModelList = analyzer.Analyze();
+            return projectModelList;
         }
 
-        private static void WriteModelToJson(List<FileModel> fileModelList, DirectoryInfo inputDirectory, DirectoryInfo outputDirectory)
+        private static void WriteModelToJson(List<ProjectModel> projectModelList, DirectoryInfo inputDirectory, DirectoryInfo outputDirectory)
         {
-            foreach (var fileModel in fileModelList)
+            foreach (var projectModel in projectModelList)
             {
-                var subFolderInOutputDirectory = CreateSubFolderInOutputDirectory(fileModel, inputDirectory, outputDirectory);
-                var jsonString = JsonSerializer.Serialize(fileModel, JsonSerializerOptions);
-                File.WriteAllText(BuildJsonName(subFolderInOutputDirectory, fileModel), jsonString);
+                var subFolderInOutputDirectory = CreateSubFolderInOutputDirectory(projectModel, inputDirectory, outputDirectory);
+                var jsonString = JsonSerializer.Serialize(projectModel, JsonSerializerOptions);
+                File.WriteAllText(BuildJsonName(subFolderInOutputDirectory, projectModel), jsonString);
             }
         }
 
-        private static DirectoryInfo CreateSubFolderInOutputDirectory(FileModel fileModel, DirectoryInfo inputDirectory,
+        private static DirectoryInfo CreateSubFolderInOutputDirectory(ProjectModel projectModel, DirectoryInfo inputDirectory,
             DirectoryInfo outputDirectory)
         {
-            DirectoryInfo parent = Directory.GetParent(fileModel.AbsolutePath);
+            DirectoryInfo parent = Directory.GetParent(projectModel.AbsolutePath);
             string relativeDirectoryPath = Path.GetRelativePath(inputDirectory.FullName, parent.FullName);
             string absoluteDirectoryPath =
                 Path.Combine(outputDirectory.FullName, inputDirectory.Name, relativeDirectoryPath);
@@ -90,9 +90,9 @@ namespace csharp_to_json_converter
             return subFolderOfOutputDirectory;
         }
 
-        private static string BuildJsonName(DirectoryInfo outputDirectory, FileModel fileModel)
+        private static string BuildJsonName(DirectoryInfo outputDirectory, ProjectModel projectModel)
         {
-            string fileName = fileModel.Name + ".json";
+            string fileName = projectModel.Name + ".json";
             return Path.Combine(outputDirectory.FullName, fileName);
         }
     }

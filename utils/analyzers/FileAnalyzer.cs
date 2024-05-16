@@ -26,10 +26,12 @@ namespace csharp_to_json_converter.utils.analyzers
 
         internal FileModel Analyze(Document fileInfo)
         {
-            FileModel fileModel = new FileModel();
-            fileModel.Name = fileInfo.Name;
-            fileModel.AbsolutePath = fileInfo.FilePath;
-            fileModel.RelativePath = Path.GetRelativePath(_inputDirectory.FullName, fileInfo.FilePath);
+            var fileModel = new FileModel
+            {
+                Name = fileInfo.Name,
+                AbsolutePath = fileInfo.FilePath,
+                RelativePath = Path.GetRelativePath(_inputDirectory.FullName, fileInfo.FilePath)
+            };
 
             _interfaceAnalyzer.Analyze(fileModel);
             _enumAnalyzer.Analyze(fileModel);

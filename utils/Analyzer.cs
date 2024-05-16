@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using csharp_to_json_converter.model;
 using csharp_to_json_converter.utils.analyzers;
+using csharp_to_json_converter.utils.ExtensionMethods;
 using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.MSBuild;
@@ -11,52 +11,41 @@ using NLog;
 
 namespace csharp_to_json_converter.utils
 {
-    public class Analyzer
+    public class Analyzer(DirectoryInfo inputDirectory)
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        private List<FileModel> _fileModels;
-        private Dictionary<string, SyntaxTree> _syntaxTrees;
-        private Dictionary<string, Compilation> _compilation;
-        private DirectoryInfo _inputDirectory;
+        private readonly List<ProjectModel> _projectModels = [];
         private Solution _solution;
+        internal static bool HasErrors;
+        internal static int NumberOfFilesInSolution = 0;
+        internal static int ScannedFiles = 0;
 
-        public Analyzer(DirectoryInfo inputDirectory)
+        internal List<ProjectModel> Analyze()
         {
-            _inputDirectory = inputDirectory;
-            _fileModels = new List<FileModel>();
-            _syntaxTrees = new Dictionary<string, SyntaxTree>();
-            _compilation = new Dictionary<string, Compilation>();
-        }
-
-        internal List<FileModel> Analyze()
-        {
-            Logger.Info("Creating compilation ...");
-            CreateCompilation();
-            Logger.Info("Finished creating compilation.");
+            Logger.Info("Opening solution ...");
+            OpenSolution();
+            Logger.Info("Finished opening solution.");
             
             Logger.Info("Analyzing scripts ...");
-            AnalyzeScripts();
+            AnalyzeProjects();
             Logger.Info("Finished analyzing scripts.");
 
-            return _fileModels;
+            if (HasErrors) Logger.Warn("Scan and Analysis will be flawed if Compilation has Errors. It is highly reccomended to fix all Errors");
+            
+            return _projectModels;
         }
-
-        private void CreateCompilation()
-        {
-            OpenSolution();
-            ReadProjects();
-        }
+        
 
         private void OpenSolution()
         {
             try
             {
-                var solutionFile = ScriptFinder.FindSolutionFile(_inputDirectory);
+                var solutionFile = ScriptFinder.FindSolutionFile(inputDirectory);
                 MSBuildLocator.RegisterDefaults();
                 var workspace = MSBuildWorkspace.Create();
                 _solution = workspace.OpenSolutionAsync(solutionFile.FullName).Result;
-
+                NumberOfFilesInSolution = _solution.CountSourceFiles();
             }
             catch (FileNotFoundException e)
             {
@@ -64,89 +53,16 @@ namespace csharp_to_json_converter.utils
             }
         }
 
-        private void ReadProjects()
+        private void AnalyzeProjects()
         {
-            var hasErrors = false;
+            var scannedProjects = 0;
             foreach (var project in _solution.Projects)
             {
-                var compilation = project.GetCompilationAsync().Result;
-                if (compilation == null) continue;
-
-                foreach (var diagnostic in compilation.GetDiagnostics()
-                             .Where(diagnostic => diagnostic.Severity >= DiagnosticSeverity.Error))
-                {
-                    hasErrors = true;
-                    Logger.Error(diagnostic.Descriptor.Description);
-                }
-                _compilation[project.FilePath!] = compilation;
-                ReadSyntaxTrees(compilation);
+                var projectAnalyzer = new ProjectAnalyzer(inputDirectory, _solution);
+                _projectModels.Add(projectAnalyzer.Analyze(project));
+                Logger.Info("Analyzed Project " + ++scannedProjects + "/" + _solution.Projects.Count() + ": " + project.Name);
             }
-            
-            if (hasErrors)
-            {
-                Logger.Error("Scan and Analysis will be flawed if Compilation has Errors. It is highly reccomended to fix all Errors");
-            }
-
-        }
-
-        private void ReadSyntaxTrees(Compilation compilation)
-        {
-            foreach (var syntaxTree in compilation.SyntaxTrees)
-            {
-                var filePath = syntaxTree.FilePath;
-                if (filePath.Contains(".nuget") || filePath.Contains("obj") || filePath.Contains("bin")) continue;
-                _syntaxTrees.TryAdd(filePath, syntaxTree);
-            }
-        }
-
-        private void AnalyzeScripts()
-        {
-            var files = CountFiles();
-            var scannedFiles = 0;
-            foreach (var project in _solution.Projects)
-            {
-                foreach (var fileInfo in project.Documents)
-                {
-                    if (fileInfo.FilePath!.Contains("obj") || fileInfo.FilePath.Contains("bin") ||
-                        fileInfo.FilePath.Contains(".nuget")) continue;
-                    AnalyzeScript(project, fileInfo);
-                    Logger.Info("Analyzed Script " + ++scannedFiles + "/" + files + ": " + fileInfo.Name);
-                }
-            }
-        }
-
-        private int CountFiles() =>  _solution.Projects.Sum(
-            project => project.Documents.Count(
-                fileInfo => !fileInfo.FilePath!.Contains("obj") 
-                            && !fileInfo.FilePath.Contains("bin") 
-                            && !fileInfo.FilePath.Contains(".nuget")));
-
-        private void AnalyzeScript(Project project, Document fileInfo)
-        {
-            Logger.Debug("Analyzing script '{0}' ...", fileInfo.FilePath);
-            if (FileIsEmpty(fileInfo)) return;
-            
-            SyntaxTree syntaxTree = _syntaxTrees[fileInfo.FilePath!];
-            SemanticModel semanticModel = _compilation[project.FilePath!].GetSemanticModel(syntaxTree);
-            
-            FileAnalyzer fileAnalyzer = new FileAnalyzer(syntaxTree, semanticModel, _inputDirectory, _solution);
-            _fileModels.Add(fileAnalyzer.Analyze(fileInfo));
         }
         
-        private static bool FileIsEmpty(Document fileInfo)
-        {
-            try
-            {
-                using StreamReader sr = new StreamReader(fileInfo.FilePath!);
-                var fileIsEmpty = sr.ReadToEnd();
-                return fileIsEmpty.Length == 0;
-            }
-            catch (IOException e)
-            {
-                Logger.Error("The file '{0}' could not be read:\n\n{1}", fileInfo.FilePath, e.Message);
-            }
-
-            return true;
-        }
     }
 }
