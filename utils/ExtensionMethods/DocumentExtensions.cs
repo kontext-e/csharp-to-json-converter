@@ -10,7 +10,7 @@ public static class DocumentExtensions
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-    private static readonly List<string> _excludedFiles = ["obj", "bin", ".nuget", "AssemblyAttributes", "AssemblyInfo"];
+    private static readonly List<string> _excludedFiles = ["obj", "bin", ".nuget"];
 
     public static bool IsEmpty(this Document document)
     {
@@ -27,6 +27,6 @@ public static class DocumentExtensions
         return true;
     }
 
-    public static bool IsExcluded(this Document document) 
-        => _excludedFiles.All(file => document.FilePath!.Contains(file));
+    public static bool IsExcluded(this Document document) =>
+        _excludedFiles.Any(excludedString => document.FilePath!.Split("\\").Any(part => part.Equals(excludedString)));
 }
