@@ -32,6 +32,7 @@ public class ProjectAnalyzer
 
         foreach (var fileInfo in project.Documents)
         {
+            if (fileInfo.IsEmpty() || fileInfo.IsExcluded()) continue;
             Logger.Debug("Analyzing script '{0}' ...", fileInfo.FilePath);
             projectModel.FileModels.Add(AnalyzeScript(fileInfo, compilation));
         }
@@ -44,14 +45,12 @@ public class ProjectAnalyzer
         foreach (var diagnostic in compilation.GetAllErrors())
         {
             Analyzer.HasErrors = true;
-            Logger.Error(diagnostic.Descriptor.Description);
+            Logger.Error(diagnostic.ToString);
         }
     }
 
     private FileModel AnalyzeScript(Document fileInfo, Compilation compilation)
     {
-        if (fileInfo.IsEmpty() || fileInfo.IsExcluded()) return null;
-
         var syntaxTree = compilation.SyntaxTrees.ToList().Find(syntaxTree => syntaxTree.FilePath.Equals(fileInfo.FilePath))!;
         var semanticModel = compilation.GetSemanticModel(syntaxTree);
         
