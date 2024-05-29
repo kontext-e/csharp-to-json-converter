@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using csharp_to_json_converter.model;
+using csharp_to_json_converter.utils.ExtensionMethods;
 using Microsoft.CodeAnalysis;
 
 namespace csharp_to_json_converter.utils.analyzers;
@@ -24,8 +25,23 @@ public class ParameterAnalyzer : AbstractAnalyzer
     {
         return new ParameterModel
         {
-            Type = parameterSymbol.Type.ToString(),
+            Type = FindAllTypesRecursively(parameterSymbol),
             Name = parameterSymbol.Name
         };
+    }
+    
+    private static IEnumerable<string> FindAllTypesRecursively(IParameterSymbol parameterSymbol)
+    {
+        switch (parameterSymbol.Type)
+        {
+            case INamedTypeSymbol namedTypeSymbol:
+                return namedTypeSymbol.GetAllTypes(parameterSymbol);
+            case ITypeParameterSymbol typeParameterSymbol:
+                return typeParameterSymbol.GetAllTypes(parameterSymbol);
+            case IArrayTypeSymbol arrayTypeSymbol:
+                return arrayTypeSymbol.GetAllTypes(parameterSymbol);
+            default:
+                return new List<string>();
+        }
     }
 }

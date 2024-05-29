@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using csharp_to_json_converter.model;
 using csharp_to_json_converter.utils.ExtensionMethods;
 using Microsoft.CodeAnalysis;
@@ -46,7 +47,7 @@ namespace csharp_to_json_converter.utils.analyzers
             {
                 Name = methodSymbol.MetadataName,
                 Fqn = methodSymbol.getFqn(),
-                ReturnType = methodSymbol.ContainingType.ToString(),
+                ReturnTypes = FindAllTypesRecursively(methodSymbol),
                 Static = methodSymbol.IsStatic,
                 Abstract = methodSymbol.IsAbstract,
                 Sealed = methodSymbol.IsSealed,
@@ -59,6 +60,21 @@ namespace csharp_to_json_converter.utils.analyzers
                 LastLineNumber = location?.GetLineSpan().EndLinePosition.Line
             };
             return constructorModel;
+        }
+        
+        private static IEnumerable<string> FindAllTypesRecursively(IMethodSymbol methodSymbol)
+        {
+            switch (methodSymbol.ReturnType)
+            {
+                case INamedTypeSymbol namedTypeSymbol:
+                    return namedTypeSymbol.GetAllTypes(methodSymbol);
+                case ITypeParameterSymbol typeParameterSymbol:
+                    return typeParameterSymbol.GetAllTypes(methodSymbol);
+                case IArrayTypeSymbol arrayTypeSymbol:
+                    return arrayTypeSymbol.GetAllTypes(methodSymbol);
+                default:
+                    return new List<string>();
+            }
         }
     }
 }

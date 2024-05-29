@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading;
 using csharp_to_json_converter.model;
+using csharp_to_json_converter.utils.ExtensionMethods;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FlowAnalysis;
@@ -81,7 +82,7 @@ namespace csharp_to_json_converter.utils.analyzers
                 Virtual = methodSymbol.IsVirtual,
                 Extern = methodSymbol.IsExtern,
                 Accessibility = methodSymbol.DeclaredAccessibility.ToString(),
-                ReturnType = methodSymbol.ReturnType.ToString(),
+                ReturnTypes = FindAllTypesRecursively(methodSymbol),
                 FirstLineNumber = methodDeclarationSyntax?.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
                 LastLineNumber = methodDeclarationSyntax?.GetLocation().GetLineSpan().EndLinePosition.Line + 1,
                 Partial = methodSymbol.PartialDefinitionPart != null ||  methodSymbol.PartialImplementationPart != null
@@ -125,5 +126,21 @@ namespace csharp_to_json_converter.utils.analyzers
             }
             methodModel.CyclomaticComplexity =  numberOfEdges - numberOfBlocks + 2;
         }
+
+        private static IEnumerable<string> FindAllTypesRecursively(IMethodSymbol methodSymbol)
+        {
+            switch (methodSymbol.ReturnType)
+            {
+                case INamedTypeSymbol namedTypeSymbol:
+                    return namedTypeSymbol.GetAllTypes(methodSymbol);
+                case ITypeParameterSymbol typeParameterSymbol:
+                    return typeParameterSymbol.GetAllTypes(methodSymbol);
+                case IArrayTypeSymbol arrayTypeSymbol:
+                    return arrayTypeSymbol.GetAllTypes(methodSymbol);
+                default:
+                    return new List<string>();
+            }
+        }
+
     }
 }
