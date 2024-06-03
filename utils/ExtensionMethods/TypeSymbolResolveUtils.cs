@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -7,114 +8,83 @@ namespace csharp_to_json_converter.utils.ExtensionMethods;
 
 public static class TypeSymbolResolveUtils
 {
+    #region PublicMethods
 
-    #region Entrypoints for TypeAnalysis
-
-    // Entrypoint to "GetAllTypes(this INamedTypeSymbol namedTypeSymbol, ISymbol symbol)"
-    // for when Main type of member is Array of Generic type,
-    // I.e. if:
-    // public class foo<T> { private T[] bar { get; set; } }
-    public static IEnumerable<string> GetAllTypes(this IArrayTypeSymbol arrayTypeSymbol, ISymbol symbol)
+    public static List<ITypeSymbol> FindTypeArguemnts(this ISymbol symbol)
     {
-        return AnalyzeArrayTypes(symbol, arrayTypeSymbol);
-    }
-    
-    // Entrypoint to "GetAllTypes(this INamedTypeSymbol namedTypeSymbol, ISymbol symbol)" for when Main type of member is Generic type,
-    // I.e. if:
-    // public class foo<T> { private T bar { get; set; } }
-    public static IEnumerable<string> GetAllTypes(this ITypeParameterSymbol typeParameterSymbol, ISymbol symbol)
-    {
-        var allTypes = new List<string>();
-        var typeArguments = FindTypeArguemnts(symbol);
-
-        foreach (var typeArgumentConstraint in LookUpTypeArgumentConstraints(typeArguments, typeParameterSymbol))
+        switch (symbol)
         {
-             allTypes.AddRange(((INamedTypeSymbol)typeArgumentConstraint).GetAllTypes(symbol));
+            case IMethodSymbol methodSymbol:
+                return FingMethodTypeArguments(symbol, methodSymbol);
+            case IParameterSymbol parameterSymbol:
+                if (FindParameterTypeArguments(parameterSymbol, out var typeSymbols)) 
+                    return typeSymbols;
+                break;
+            case IFieldSymbol or IPropertySymbol:
+                return symbol.ContainingType.TypeArguments.ToList();
+            default:
+                return [];
         }
 
-        allTypes.AddRange(BuildTypeArgumentString(typeArguments));
-        return allTypes;
+        return [];
     }
 
-    // Recursive Logic to find all Types of a property or field.
-    // string --> string
-    // List<string> --> List<T>, string
-    // Entrypoint for when Main Type of member is an explicit Type
-    public static IEnumerable<string> GetAllTypes(this INamedTypeSymbol namedTypeSymbol, ISymbol symbol)
+    public static IEnumerable<string> FindAllTypesRecursively(this ISymbol symbol, List<ITypeSymbol> typeArguments)
+    {
+        switch (symbol)
+        {
+            case INamedTypeSymbol namedTypeSymbol:
+                return namedTypeSymbol.GetAllTypes(typeArguments);
+            case ITypeParameterSymbol typeParameterSymbol:
+                return typeParameterSymbol.GetAllTypes(typeArguments);
+            case IArrayTypeSymbol arrayTypeSymbol:
+                return arrayTypeSymbol.GetAllTypes(typeArguments);
+            default:
+                return new List<string>();
+        }
+    }
+
+    #endregion
+
+    #region Alanyzing Methods
+    
+    private static IEnumerable<string> GetAllTypes(this ITypeParameterSymbol typeParameterSymbol, List<ITypeSymbol> typeArguments)
+    {
+        var allTypes = new List<string>();
+
+        var typeArgumentConstraints = LookUpTypeArgumentConstraints(typeArguments, typeParameterSymbol);
+        if (typeArgumentConstraints.Length == 0)
+        {
+            allTypes.Add(typeParameterSymbol.Name);
+            return allTypes;
+        }
+        
+        foreach (var typeArgumentConstraint in typeArgumentConstraints)
+        {
+            allTypes.AddRange(FindAllTypesRecursively(typeArgumentConstraint, typeArguments));
+        }
+        
+        return allTypes;
+    }
+    
+    private static IEnumerable<string> GetAllTypes(this INamedTypeSymbol namedTypeSymbol, List<ITypeSymbol> typeArguments)
     {
         var allTypes = new List<string>();
         
         var nullableType = namedTypeSymbol.NullableAnnotation == NullableAnnotation.Annotated;
         allTypes.Add(namedTypeSymbol.ConstructedFrom.ToDisplayString() + (nullableType ? "?" : ""));
 
-        allTypes.AddRange(AnalyzeNestedTypes(namedTypeSymbol, symbol));
-
-        return allTypes;
-    }
-
-    #endregion
-
-    #region Analyzers for different Type Declarations
-
-    private static List<string> AnalyzeNestedTypes(INamedTypeSymbol namedTypeSymbol, ISymbol symbol)
-    {
-        var allTypes = new List<string>();
-        var typeArguments = symbol.ContainingType.TypeArguments.ToList();
-        
         foreach (var typeArgument in namedTypeSymbol.TypeArguments)
         {
-            switch (typeArgument)
-            {
-                case ITypeParameterSymbol argumentType: 
-                    allTypes.AddRange(AnalyzeTypeParameter(symbol, typeArguments, typeArgument, argumentType)); break;
-                case IArrayTypeSymbol arrayType:
-                    allTypes.AddRange(AnalyzeArrayTypes(symbol, arrayType)); break;
-                default:
-                    allTypes.AddRange(GetAllTypes((INamedTypeSymbol)typeArgument, symbol)); break;
-            }
+            allTypes.AddRange(FindAllTypesRecursively(typeArgument, typeArguments));
         }
 
         return allTypes;
     }
-
-    private static List<string> AnalyzeTypeParameter(ISymbol symbol, List<ITypeSymbol> typeArguments, ITypeSymbol typeArgument,
-        ITypeParameterSymbol argumentType)
+    
+    private static IEnumerable<string> GetAllTypes(this IArrayTypeSymbol arrayTypeSymbol, List<ITypeSymbol> typeArguments)
     {
-        if (TypeArgumentIsFromContainingGenericType(typeArguments, typeArgument))
-        {
-            return AnalyzeGenericTypes(symbol, typeArgument, typeArguments);
-        }
-        return [argumentType.ToDisplayString()];
-    }
-
-    private static List<string> AnalyzeArrayTypes(ISymbol symbol, IArrayTypeSymbol arrayType)
-    {
-        var allTypes = new List<string>();
-        var typeArguments = symbol.ContainingType.TypeArguments.ToList();
-        switch (arrayType.ElementType)
-        {
-            case INamedTypeSymbol:
-                allTypes.Add(arrayType.ToDisplayString());
-                break;
-            case ITypeParameterSymbol:
-                allTypes.AddRange(AnalyzeGenericTypes(symbol, arrayType, typeArguments));
-                break;
-        }
-
-        return allTypes;
-    }
-
-    private static List<string> AnalyzeGenericTypes(ISymbol symbol, ITypeSymbol typeSymbol, List<ITypeSymbol> typeArguments)
-    {
-        var allTypes = new List<string>();
-
-        var type = typeSymbol is IArrayTypeSymbol arrayTypeSymbol ? arrayTypeSymbol.ElementType : typeSymbol;
-        foreach (var constraintType in LookUpTypeArgumentConstraints(typeArguments, type))
-        {
-            allTypes.AddRange(GetAllTypes((INamedTypeSymbol)constraintType, symbol));
-        }
-
-        return allTypes;
+        return arrayTypeSymbol.ElementType.FindAllTypesRecursively(typeArguments).Append(arrayTypeSymbol.ToDisplayString());
     }
 
     #endregion
@@ -127,32 +97,28 @@ public static class TypeSymbolResolveUtils
         var constraintTypes = typeArgumentSymbol?.ConstraintTypes ?? [];
         return constraintTypes;
     }
-
-    private static bool TypeArgumentIsFromContainingGenericType(List<ITypeSymbol> typeArguments, ITypeSymbol typeArgument)
-    {
-        return typeArguments.Select(argument => argument.MetadataName).Contains(typeArgument.MetadataName);
-    }
     
-    private static List<ITypeSymbol> FindTypeArguemnts(ISymbol symbol)
+    private static bool FindParameterTypeArguments(IParameterSymbol parameterSymbol, out List<ITypeSymbol> typeSymbols)
     {
-        switch (symbol)
+        var containingMethodSymbol = (IMethodSymbol)parameterSymbol.ContainingSymbol;
+        if (containingMethodSymbol.ContainingSymbol is not INamedTypeSymbol containingTypeSymbol)
         {
-            case IMethodSymbol methodSymbol:
-                return methodSymbol.TypeArguments.ToList();
-            case IParameterSymbol parameterSymbol:
-                return ((IMethodSymbol)parameterSymbol.ContainingSymbol).TypeArguments.ToList();
-            case IFieldSymbol or IParameterSymbol:
-                return symbol.ContainingType.TypeArguments.ToList();
-            default:
-                return [];
+            typeSymbols = [];
+            return false;
         }
+        var typeArguments = containingMethodSymbol.TypeArguments.ToList();
+        typeArguments.AddRange(containingTypeSymbol.TypeArguments);
+        typeSymbols = typeArguments;
+        return true;
+    }
+
+    private static List<ITypeSymbol> FingMethodTypeArguments(ISymbol symbol, IMethodSymbol methodSymbol)
+    {
+        var methodTypeArguments = methodSymbol.TypeArguments.ToList();
+        methodTypeArguments.AddRange(symbol.ContainingType.TypeArguments);
+        return methodTypeArguments;
     }
     
-    private static IEnumerable<string> BuildTypeArgumentString(List<ITypeSymbol> typeArguments)
-    {
-        return typeArguments.Select(t => t.ToDisplayString() + (t.NullableAnnotation == NullableAnnotation.Annotated? "?" : ""));
-    }
-
-
     #endregion
+    
 }

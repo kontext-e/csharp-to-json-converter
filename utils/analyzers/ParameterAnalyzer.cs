@@ -25,23 +25,8 @@ public class ParameterAnalyzer : AbstractAnalyzer
     {
         return new ParameterModel
         {
-            Type = FindAllTypesRecursively(parameterSymbol),
+            Types = parameterSymbol.Type.FindAllTypesRecursively(parameterSymbol.FindTypeArguemnts()),
             Name = parameterSymbol.Name
         };
-    }
-    
-    private static IEnumerable<string> FindAllTypesRecursively(IParameterSymbol parameterSymbol)
-    {
-        switch (parameterSymbol.Type)
-        {
-            case INamedTypeSymbol namedTypeSymbol:
-                return namedTypeSymbol.GetAllTypes(parameterSymbol);
-            case ITypeParameterSymbol typeParameterSymbol:
-                return typeParameterSymbol.GetAllTypes(parameterSymbol);
-            case IArrayTypeSymbol arrayTypeSymbol:
-                return arrayTypeSymbol.GetAllTypes(parameterSymbol);
-            default:
-                return new List<string>();
-        }
     }
 }

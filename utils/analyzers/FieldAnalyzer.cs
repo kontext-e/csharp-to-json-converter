@@ -25,14 +25,13 @@ namespace csharp_to_json_converter.utils.analyzers
             {
                 foreach (var variableDeclaratorSyntax in fieldDeclarationSyntax.Declaration.Variables)
                 {
-                    var fieldSymbol = ModelExtensions.GetDeclaredSymbol(SemanticModel, variableDeclaratorSyntax) as IFieldSymbol;
-                    if (fieldSymbol == null) { continue; }
+                    if (ModelExtensions.GetDeclaredSymbol(SemanticModel, variableDeclaratorSyntax) is not IFieldSymbol fieldSymbol) { continue; }
 
                     var fieldModel = new FieldModel
                     {
                         Name = fieldSymbol.Name,
                         Fqn = fieldSymbol.ToString(),
-                        Types = AnalyzeFieldType(fieldSymbol),
+                        Types = fieldSymbol.Type.FindAllTypesRecursively(fieldSymbol.FindTypeArguemnts()),
                         Static = fieldSymbol.IsStatic,
                         Abstract = fieldSymbol.IsAbstract,
                         Sealed = fieldSymbol.IsSealed,
@@ -44,7 +43,7 @@ namespace csharp_to_json_converter.utils.analyzers
                     };
 
                     var literals = variableDeclaratorSyntax.DescendantNodes().OfType<LiteralExpressionSyntax>().ToList();
-                    if (literals.Any())
+                    if (literals.Count != 0)
                     {
                         fieldModel.ConstantValue = literals[0].Token.IsKind(SyntaxKind.NullLiteralExpression) ? "null" : literals[0].Token.Value?.ToString();
                     }
@@ -54,21 +53,5 @@ namespace csharp_to_json_converter.utils.analyzers
                 }
             }
         }
-
-        private static IEnumerable<string> AnalyzeFieldType(IFieldSymbol fieldSymbol)
-        {
-            switch (fieldSymbol.Type)
-            {
-                case INamedTypeSymbol fieldTypeSymbol:
-                    return fieldTypeSymbol.GetAllTypes(fieldSymbol);
-                case ITypeParameterSymbol typeParameterSymbol:
-                    return typeParameterSymbol.GetAllTypes(fieldSymbol);
-                case IArrayTypeSymbol arrayTypeSymbol:
-                    return arrayTypeSymbol.GetAllTypes(fieldSymbol);
-                default:
-                    return new List<string>();
-            }
-        }
-        
     }
 }

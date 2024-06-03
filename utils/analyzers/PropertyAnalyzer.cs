@@ -28,7 +28,7 @@ namespace csharp_to_json_converter.utils.analyzers
             {
                 Name = propertySymbol.Name,
                 Fqn = propertySymbol.ToString(),
-                Types = AnalyzePropertyType(propertySymbol),
+                Types = propertySymbol.Type.FindAllTypesRecursively(propertySymbol.FindTypeArguemnts()),
                 Sealed = propertySymbol.IsSealed,
                 Static = propertySymbol.IsStatic,
                 Override = propertySymbol.IsOverride,
@@ -39,21 +39,6 @@ namespace csharp_to_json_converter.utils.analyzers
                 Accessibility = propertySymbol.DeclaredAccessibility.ToString().Length == 0 ? "Internal" : propertySymbol.DeclaredAccessibility.ToString()
             };
             return propertyModel;
-        }
-
-        private static IEnumerable<string> AnalyzePropertyType(IPropertySymbol propertySymbol)
-        {
-            switch (propertySymbol.Type)
-            {
-                case INamedTypeSymbol fieldTypeSymbol:
-                    return fieldTypeSymbol.GetAllTypes(propertySymbol);
-                case ITypeParameterSymbol typeParameterSymbol:
-                    return typeParameterSymbol.GetAllTypes(propertySymbol);
-                case IArrayTypeSymbol arrayTypeSymbol:
-                    return arrayTypeSymbol.GetAllTypes(propertySymbol);
-                default:
-                    return new List<string>();
-            }
         }
     }
 }
