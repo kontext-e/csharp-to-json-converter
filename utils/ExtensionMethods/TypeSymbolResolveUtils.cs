@@ -29,62 +29,61 @@ public static class TypeSymbolResolveUtils
         return [];
     }
 
-    public static IEnumerable<string> FindAllTypesRecursively(this ISymbol symbol, List<ITypeSymbol> typeArguments)
+    public static IEnumerable<string> FindAllTypes(this ISymbol symbol, List<ITypeSymbol> typeArguments)
+    {
+        var result = new List<string>();
+        FindAllTypesRecursively(symbol, typeArguments, result);
+        return result;
+    }
+    
+    #endregion
+
+    private static void FindAllTypesRecursively(this ISymbol symbol, List<ITypeSymbol> typeArguments, List<string> result)
     {
         switch (symbol)
         {
             case INamedTypeSymbol namedTypeSymbol:
-                return namedTypeSymbol.GetAllTypes(typeArguments);
+                namedTypeSymbol.GetAllTypes(typeArguments, result); break;
             case ITypeParameterSymbol typeParameterSymbol:
-                return typeParameterSymbol.GetAllTypes(typeArguments);
+                typeParameterSymbol.GetAllTypes(typeArguments, result); break;
             case IArrayTypeSymbol arrayTypeSymbol:
-                return arrayTypeSymbol.GetAllTypes(typeArguments);
-            default:
-                return new List<string>();
+                arrayTypeSymbol.GetAllTypes(typeArguments, result); break;
         }
     }
 
-    #endregion
+    #region Analyzing Methods
 
-    #region Alanyzing Methods
-    
-    private static IEnumerable<string> GetAllTypes(this ITypeParameterSymbol typeParameterSymbol, List<ITypeSymbol> typeArguments)
+    private static void GetAllTypes(this ITypeParameterSymbol typeParameterSymbol, List<ITypeSymbol> typeArguments, List<string> result)
     {
-        var allTypes = new List<string>();
-
         var typeArgumentConstraints = LookUpTypeArgumentConstraints(typeArguments, typeParameterSymbol);
         if (typeArgumentConstraints.Length == 0)
         {
-            allTypes.Add(typeParameterSymbol.Name);
-            return allTypes;
+            result.Add(typeParameterSymbol.Name);
         }
         
         foreach (var typeArgumentConstraint in typeArgumentConstraints)
         {
-            allTypes.AddRange(FindAllTypesRecursively(typeArgumentConstraint, typeArguments));
+            if (result.Contains(((INamedTypeSymbol)typeArgumentConstraint).ConstructedFrom.ToDisplayString())) { continue; }
+            result.Add(typeParameterSymbol.ToDisplayString());
+            FindAllTypesRecursively(typeArgumentConstraint, typeArguments, result);
         }
-        
-        return allTypes;
     }
     
-    private static IEnumerable<string> GetAllTypes(this INamedTypeSymbol namedTypeSymbol, List<ITypeSymbol> typeArguments)
+    private static void GetAllTypes(this INamedTypeSymbol namedTypeSymbol, List<ITypeSymbol> typeArguments, List<string> result)
     {
-        var allTypes = new List<string>();
-        
         var nullableType = namedTypeSymbol.NullableAnnotation == NullableAnnotation.Annotated;
-        allTypes.Add(namedTypeSymbol.ConstructedFrom.ToDisplayString() + (nullableType ? "?" : ""));
+        result.Add(namedTypeSymbol.ConstructedFrom.ToDisplayString() + (nullableType ? "?" : ""));
 
         foreach (var typeArgument in namedTypeSymbol.TypeArguments)
         {
-            allTypes.AddRange(FindAllTypesRecursively(typeArgument, typeArguments));
+            if (result.Contains(typeArgument.ToDisplayString())) { continue; }
+            FindAllTypesRecursively(typeArgument, typeArguments, result);
         }
-
-        return allTypes;
     }
     
-    private static IEnumerable<string> GetAllTypes(this IArrayTypeSymbol arrayTypeSymbol, List<ITypeSymbol> typeArguments)
+    private static void GetAllTypes(this IArrayTypeSymbol arrayTypeSymbol, List<ITypeSymbol> typeArguments, List<string> result)
     {
-        return arrayTypeSymbol.ElementType.FindAllTypesRecursively(typeArguments).Append(arrayTypeSymbol.ToDisplayString());
+        result.AddRange(arrayTypeSymbol.ElementType.FindAllTypes(typeArguments).Append(arrayTypeSymbol.ToDisplayString()));
     }
 
     #endregion

@@ -31,7 +31,7 @@ namespace csharp_to_json_converter.utils.analyzers
                     {
                         Name = fieldSymbol.Name,
                         Fqn = fieldSymbol.ToString(),
-                        Types = fieldSymbol.Type.FindAllTypesRecursively(fieldSymbol.FindTypeArguemnts()),
+                        Types = fieldSymbol.Type.FindAllTypes(fieldSymbol.FindTypeArguemnts()),
                         Static = fieldSymbol.IsStatic,
                         Abstract = fieldSymbol.IsAbstract,
                         Sealed = fieldSymbol.IsSealed,
