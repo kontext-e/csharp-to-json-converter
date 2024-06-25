@@ -15,6 +15,8 @@ namespace csharp_to_json_converter.utils
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
+        internal static Dictionary<string, Compilation> Compilations;
+
         private readonly List<ProjectModel> _projectModels = [];
         private Solution _solution;
         internal static bool HasErrors;
@@ -27,6 +29,10 @@ namespace csharp_to_json_converter.utils
             OpenSolution();
             Logger.Info("Finished opening solution.");
             
+            Logger.Info("Compiling projects");
+            CompileProjects();
+            Logger.Info("Finished compiling projects");
+            
             Logger.Info("Analyzing scripts ...");
             AnalyzeProjects();
             Logger.Info("Finished analyzing scripts.");
@@ -35,7 +41,28 @@ namespace csharp_to_json_converter.utils
             
             return _projectModels;
         }
+
+        private void CompileProjects()
+        {
+            foreach (var project in _solution.Projects)
+            {
+                var compilation = project.GetCompilationAsync().Result;
+                if (compilation == null) return;
+
+                CheckForCompilationErrors(compilation);
+
+                Compilations[project.Name] = compilation;
+            }
+        }
         
+        private static void CheckForCompilationErrors(Compilation compilation)
+        {
+            foreach (var diagnostic in compilation.GetAllErrors())
+            {
+                HasErrors = true;
+                Logger.Error(diagnostic.ToString);
+            }
+        }
 
         private void OpenSolution()
         {

@@ -25,28 +25,15 @@ public class ProjectAnalyzer
         projectModel.Name = project.Name;
         projectModel.AbsolutePath = project.FilePath;
         projectModel.RelativePath = Path.GetRelativePath(_solution.FilePath!, project.FilePath!);
-        var compilation = project.GetCompilationAsync().Result;
-        if (compilation == null) return projectModel;
-
-        CheckForCompilationErrors(compilation);
-
+        
         foreach (var fileInfo in project.Documents)
         {
             if (fileInfo.IsEmpty() || fileInfo.IsExcluded()) continue;
             Logger.Debug("Analyzing script '{0}' ...", fileInfo.FilePath);
-            projectModel.FileModels.Add(AnalyzeScript(fileInfo, compilation));
+            projectModel.FileModels.Add(AnalyzeScript(fileInfo, Analyzer.Compilations[project.Name]));
         }
 
         return projectModel;
-    }
-
-    private static void CheckForCompilationErrors(Compilation compilation)
-    {
-        foreach (var diagnostic in compilation.GetAllErrors())
-        {
-            Analyzer.HasErrors = true;
-            Logger.Error(diagnostic.ToString);
-        }
     }
 
     private FileModel AnalyzeScript(Document fileInfo, Compilation compilation)
