@@ -82,7 +82,7 @@ namespace csharp_to_json_converter.utils.analyzers
                 Virtual = methodSymbol.IsVirtual,
                 Extern = methodSymbol.IsExtern,
                 Accessibility = methodSymbol.DeclaredAccessibility.ToString(),
-                ReturnTypes = methodSymbol.ReturnType.FindAllTypes(methodSymbol.FindTypeArguemnts()),
+                ReturnTypes = methodSymbol.ReturnType.FindAllTypes(methodSymbol.FindTypeArguments()),
                 FirstLineNumber = methodDeclarationSyntax?.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
                 LastLineNumber = methodDeclarationSyntax?.GetLocation().GetLineSpan().EndLinePosition.Line + 1,
                 Partial = methodSymbol.PartialDefinitionPart != null ||  methodSymbol.PartialImplementationPart != null

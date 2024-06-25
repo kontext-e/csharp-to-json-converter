@@ -10,7 +10,7 @@ public static class TypeSymbolResolveUtils
 {
     #region PublicMethods
 
-    public static List<ITypeSymbol> FindTypeArguemnts(this ISymbol symbol)
+    public static List<ITypeSymbol> FindTypeArguments(this ISymbol symbol)
     {
         switch (symbol)
         {

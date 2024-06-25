@@ -25,7 +25,7 @@ public class ParameterAnalyzer : AbstractAnalyzer
     {
         return new ParameterModel
         {
-            Types = parameterSymbol.Type.FindAllTypes(parameterSymbol.FindTypeArguemnts()),
+            Types = parameterSymbol.Type.FindAllTypes(parameterSymbol.FindTypeArguments()),
             Name = parameterSymbol.Name
         };
     }

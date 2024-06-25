@@ -28,7 +28,7 @@ namespace csharp_to_json_converter.utils.analyzers
             {
                 Name = propertySymbol.Name,
                 Fqn = propertySymbol.ToString(),
-                Types = propertySymbol.Type.FindAllTypes(propertySymbol.FindTypeArguemnts()),
+                Types = propertySymbol.Type.FindAllTypes(propertySymbol.FindTypeArguments()),
                 Sealed = propertySymbol.IsSealed,
                 Static = propertySymbol.IsStatic,
                 Override = propertySymbol.IsOverride,
