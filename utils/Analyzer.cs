@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using csharp_to_json_converter.model;
@@ -15,11 +16,11 @@ namespace csharp_to_json_converter.utils
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        internal static Dictionary<string, Compilation> Compilations;
+        internal static readonly Dictionary<string, Compilation> Compilations = new();
 
         private readonly List<ProjectModel> _projectModels = [];
         private Solution _solution;
-        internal static bool HasErrors;
+        private static bool _hasErrors;
         internal static int NumberOfFilesInSolution = 0;
         internal static int ScannedFiles = 0;
 
@@ -37,7 +38,7 @@ namespace csharp_to_json_converter.utils
             AnalyzeProjects();
             Logger.Info("Finished analyzing scripts.");
 
-            if (HasErrors) Logger.Warn("Scan and Analysis will be flawed if Compilation has Errors. It is highly reccomended to fix all Errors");
+            if (_hasErrors) Logger.Warn("Scan and Analysis will be flawed if Compilation has Errors. It is highly reccomended to fix all Errors");
             
             return _projectModels;
         }
@@ -59,7 +60,7 @@ namespace csharp_to_json_converter.utils
         {
             foreach (var diagnostic in compilation.GetAllErrors())
             {
-                HasErrors = true;
+                _hasErrors = true;
                 Logger.Error(diagnostic.ToString);
             }
         }
@@ -89,6 +90,18 @@ namespace csharp_to_json_converter.utils
                 _projectModels.Add(projectAnalyzer.Analyze(project));
                 Logger.Info("Analyzed Project " + ++scannedProjects + "/" + _solution.Projects.Count() + ": " + project.Name);
             }
+        }
+        
+        internal static SemanticModel FindSemanticModelForFileContainingSyntaxNode(SyntaxNode syntaxNode)
+        {
+            foreach (var compilation in Compilations.Values)
+            {
+                if (compilation.SyntaxTrees.Contains(syntaxNode.SyntaxTree))
+                {
+                    return compilation.GetSemanticModel(syntaxNode.SyntaxTree);
+                }
+            }
+            throw new Exception("Analyzed File does not belong to solution");
         }
         
     }
