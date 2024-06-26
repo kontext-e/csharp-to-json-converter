@@ -21,20 +21,20 @@ namespace csharp_to_json_converter.utils.analyzers
         {
             if (methodSymbol == null || methodSymbol.IsPartialDefinition) return;
 
-            var callersAsync = SymbolFinder.FindCallersAsync(methodSymbol, _solution).Result;
-            foreach (var caller in callersAsync)
+            var invocationInfos = SymbolFinder.FindCallersAsync(methodSymbol, _solution).Result;
+            foreach (var invokationInfo in invocationInfos)
             {
-                var invokeModels = CreateInvokeModelForEachLocation(caller);
+                var invokeModels = CreateInvokeModelForEachLocation(invokationInfo);
                 methodModel.InvokedBy.AddRange(invokeModels);
             }
         }
 
-        private static IEnumerable<InvocationModel> CreateInvokeModelForEachLocation(SymbolCallerInfo caller)
+        private IEnumerable<InvocationModel> CreateInvokeModelForEachLocation(SymbolCallerInfo invocationInfo)
         {
-            return caller.Locations.Select(location => new InvocationModel
+            return invocationInfo.Locations.Select(invokationlocation => new InvocationModel
             {
-                MethodId = caller.CallingSymbol.ToString(), 
-                LineNumber = location.GetLineSpan().StartLinePosition.Line + 1
+                MethodId = invocationInfo.CallingSymbol.ToString(), 
+                LineNumber = invokationlocation.GetLineSpan().StartLinePosition.Line + 1,
             }).ToList();
         }
 
