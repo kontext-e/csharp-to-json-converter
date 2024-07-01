@@ -12,7 +12,7 @@ using NLog;
 
 namespace csharp_to_json_converter.utils
 {
-    public class Analyzer(DirectoryInfo inputDirectory)
+    public class Analyzer(DirectoryInfo solutionFile)
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -69,7 +69,6 @@ namespace csharp_to_json_converter.utils
         {
             try
             {
-                var solutionFile = ScriptFinder.FindSolutionFile(inputDirectory);
                 MSBuildLocator.RegisterDefaults();
                 var workspace = MSBuildWorkspace.Create();
                 _solution = workspace.OpenSolutionAsync(solutionFile.FullName).Result;
@@ -86,7 +85,7 @@ namespace csharp_to_json_converter.utils
             var scannedProjects = 0;
             foreach (var project in _solution.Projects)
             {
-                var projectAnalyzer = new ProjectAnalyzer(inputDirectory, _solution);
+                var projectAnalyzer = new ProjectAnalyzer(solutionFile, _solution);
                 _projectModels.Add(projectAnalyzer.Analyze(project));
                 Logger.Info("Analyzed Project " + ++scannedProjects + "/" + _solution.Projects.Count() + ": " + project.Name);
             }
