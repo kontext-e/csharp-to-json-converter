@@ -13,8 +13,7 @@ namespace csharp_to_json_converter.model
         public bool IsImplementation { get; set; }
         public bool IsExtensionMethod { get; set; }
         public string ExtendsType { get; set; }
-        public List<InvocationModel> Invokes { get; set; } = new(); // <--Some invocations are only visible when analyzing method Body 
-        public List<InvocationModel> InvokedBy { get; set; } = new(); // <-- Some only when checking for usages of method
+        public List<InvocationModel> InvokedBy { get; set; } = new();
         public List<ParameterModel> Parameters { get; set; } = new();
         public List<ArrayCreationModel> CreatesArrays { get; set; } = new();
         public string AssociatedProperty { get; set; }
