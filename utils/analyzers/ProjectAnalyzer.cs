@@ -41,7 +41,7 @@ public class ProjectAnalyzer
         var syntaxTree = compilation.SyntaxTrees.ToList().Find(syntaxTree => syntaxTree.FilePath.Equals(fileInfo.FilePath))!;
         var semanticModel = compilation.GetSemanticModel(syntaxTree);
         
-        var fileAnalyzer = new FileAnalyzer(syntaxTree, semanticModel, _inputDirectory, _solution);
+        var fileAnalyzer = new FileAnalyzer(syntaxTree, semanticModel, _inputDirectory);
         var fileModel = fileAnalyzer.Analyze(fileInfo);
         Logger.Info("Analyzed File " + ++Analyzer.ScannedFiles + "/" + Analyzer.NumberOfFilesInSolution + ": " + fileInfo.Name);
 

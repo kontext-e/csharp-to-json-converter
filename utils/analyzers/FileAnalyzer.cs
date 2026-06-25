@@ -13,15 +13,15 @@ namespace csharp_to_json_converter.utils.analyzers
         private readonly DirectoryInfo _inputDirectory;
         private readonly StructAnalyzer _structAnalyzer;
 
-        public FileAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel, DirectoryInfo inputDirectory, Solution solution) : base(
+        public FileAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel, DirectoryInfo inputDirectory) : base(
             syntaxTree, semanticModel)
         {
             _inputDirectory = inputDirectory;
             _enumAnalyzer = new EnumAnalyzer(SyntaxTree, SemanticModel, _inputDirectory);
-            _classAnalyzer = new ClassAnalyzer(SyntaxTree, SemanticModel, _inputDirectory, solution);
+            _classAnalyzer = new ClassAnalyzer(SyntaxTree, SemanticModel, _inputDirectory);
             _usingsAnalyzer = new UsingsAnalyzer(SyntaxTree, SemanticModel);
-            _interfaceAnalyzer = new InterfaceAnalyzer(SyntaxTree, SemanticModel, _inputDirectory, solution);
-            _structAnalyzer = new StructAnalyzer(SyntaxTree, SemanticModel, _inputDirectory, solution);
+            _interfaceAnalyzer = new InterfaceAnalyzer(SyntaxTree, SemanticModel, _inputDirectory);
+            _structAnalyzer = new StructAnalyzer(SyntaxTree, SemanticModel, _inputDirectory);
         }
 
         internal FileModel Analyze(Document fileInfo)
