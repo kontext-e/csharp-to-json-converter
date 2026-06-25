@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 using CommandLine;
 using csharp_to_json_converter.model;
 using csharp_to_json_converter.utils;
@@ -27,7 +28,7 @@ namespace csharp_to_json_converter
         {
             if (SetupEnvironment(args, out var parserResult)) return;
             var (inputDirectory, outputDirectory) = PrepareIO(parserResult);
-            var fileModelList = AnalyzeProjects(inputDirectory);
+            var fileModelList = AnalyzeProjects(inputDirectory).GetAwaiter().GetResult();
             WriteFiles(outputDirectory, fileModelList, inputDirectory);
         }
 
@@ -62,10 +63,10 @@ namespace csharp_to_json_converter
             Logger.Info("Finished writing model to JSON.");
         }
 
-        private static List<ProjectModel> AnalyzeProjects(DirectoryInfo inputDirectory)
+        private static async Task<List<ProjectModel>> AnalyzeProjects(DirectoryInfo inputDirectory)
         {
             Analyzer analyzer = new Analyzer(inputDirectory);
-            List<ProjectModel> projectModelList = analyzer.Analyze();
+            List<ProjectModel> projectModelList = await analyzer.AnalyzeAsync();
             return projectModelList;
         }
 
