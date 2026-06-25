@@ -14,9 +14,9 @@ namespace csharp_to_json_converter.utils.analyzers
         private readonly InvocationAnalyzer _invocationAnalyzer;
         private readonly ParameterAnalyzer _parameterAnalyzer;
 
-        internal MethodAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel, Solution solution) : base(syntaxTree, semanticModel)
+        internal MethodAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel) : base(syntaxTree, semanticModel)
         {
-            _invocationAnalyzer = new InvocationAnalyzer(SyntaxTree, SemanticModel, solution);
+            _invocationAnalyzer = new InvocationAnalyzer(SyntaxTree, SemanticModel);
             _parameterAnalyzer = new ParameterAnalyzer(SyntaxTree, SemanticModel);
         }
 
@@ -59,7 +59,7 @@ namespace csharp_to_json_converter.utils.analyzers
                     CalculateCyclomaticComplexity(methodDeclarationSyntax, methodModel);
                 }
                 
-                _invocationAnalyzer.ProcessInvocations(methodSymbol, methodModel);
+                _invocationAnalyzer.ProcessInvocations(methodDeclarationSyntax, methodModel, methodSymbol);
                 _invocationAnalyzer.ProcessArrayCreations(methodDeclarationSyntax, methodModel);
                 _parameterAnalyzer.Analyze(methodSymbol, methodModel);
 
