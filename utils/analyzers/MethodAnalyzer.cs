@@ -73,7 +73,7 @@ namespace csharp_to_json_converter.utils.analyzers
             var methodModel = new MethodModel
             {
                 Name = methodSymbol.Name,
-                Fqn = methodSymbol.ToString(),
+                Fqn = GetFqn(methodSymbol),
                 Static = methodSymbol.IsStatic,
                 Abstract = methodSymbol.IsAbstract,
                 Sealed = methodSymbol.IsSealed,
@@ -94,6 +94,16 @@ namespace csharp_to_json_converter.utils.analyzers
             }
             
             return methodModel;
+        }
+        
+        private static string GetFqn(IMethodSymbol methodSymbol)
+        {
+            if (!methodSymbol.IsExtensionMethod) return methodSymbol.ToString();
+    
+            // Produce the reduced form: TypeClass.ExtensionMethodWithArgument(double)
+            // This matches how call sites report the symbol naturally
+            var reducedSymbol = methodSymbol.ReduceExtensionMethod(methodSymbol.Parameters[0].Type);
+            return reducedSymbol?.ToString() ?? methodSymbol.ToString();
         }
 
         private static void AnalyzeForExtensionMethod(IMethodSymbol methodSymbol, MethodModel methodModel)
