@@ -4,90 +4,111 @@ using csharp_to_json_converter.model;
 using csharp_to_json_converter.utils.ExtensionMethods;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.FindSymbols;
-using Microsoft.CodeAnalysis.Text;
 
 namespace csharp_to_json_converter.utils.analyzers
 {
     public class InvocationAnalyzer : AbstractAnalyzer
     {
-        private readonly Solution _solution;
+        internal InvocationAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel) : base(syntaxTree, semanticModel) { }
 
-        internal InvocationAnalyzer(SyntaxTree syntaxTree, SemanticModel semanticModel, Solution solution) : base(syntaxTree, semanticModel)
+        public void ProcessInvocations(MethodDeclarationSyntax methodDeclarationSyntax,
+            MethodModel methodModel,
+            IMethodSymbol callerSymbol)
         {
-            _solution = solution;
+            var invocations = methodDeclarationSyntax
+                .DescendantNodes()
+                .OfType<InvocationExpressionSyntax>();
+
+            ProcessInvocationNodes(invocations, methodModel, callerSymbol, SemanticModel);
+            ProcessObjectCreationNodes(methodDeclarationSyntax, methodModel, callerSymbol, SemanticModel);
         }
-        
-        public void ProcessInvocations(IMethodSymbol methodSymbol, MethodModel methodModel)
-        {
-            if (methodSymbol == null || methodSymbol.IsPartialDefinition) return;
 
-            var invocationInfos = SymbolFinder.FindCallersAsync(methodSymbol, _solution).Result;
-            foreach (var invokationInfo in invocationInfos)
+        public void ProcessInvocations(IMethodSymbol callerSymbol, MethodModel methodModel)
+        {
+            var syntaxReference = callerSymbol.DeclaringSyntaxReferences.FirstOrDefault();
+            if (syntaxReference == null) return;
+
+            var accessorSyntax = syntaxReference.GetSyntax();
+            var correctSemanticModel = Analyzer.FindSemanticModelForFileContainingSyntaxNode(accessorSyntax);
+            if (correctSemanticModel == null) return;
+
+            var invocations = accessorSyntax
+                .DescendantNodes()
+                .OfType<InvocationExpressionSyntax>();
+
+            ProcessInvocationNodes(invocations, methodModel, callerSymbol, correctSemanticModel);
+            ProcessObjectCreationNodes(accessorSyntax, methodModel, callerSymbol, correctSemanticModel);
+        }
+
+        private void ProcessInvocationNodes(IEnumerable<InvocationExpressionSyntax> invocations,
+            MethodModel methodModel,
+            IMethodSymbol callerSymbol,
+            SemanticModel semanticModel)
+        {
+            foreach (var invocation in invocations)
             {
-                var invokeModels = CreateInvokeModelForEachLocation(invokationInfo);
-                methodModel.InvokedBy.AddRange(invokeModels);
+                var symbolInfo = semanticModel.GetSymbolInfo(invocation);
+                var calleeSymbol = (symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault())
+                    as IMethodSymbol;
+
+                if (calleeSymbol == null) continue;
+
+                methodModel.Invokes.Add(CreateInvokeModel(calleeSymbol, invocation, callerSymbol));
             }
         }
 
-        private IEnumerable<InvocationModel> CreateInvokeModelForEachLocation(SymbolCallerInfo invocationInfo)
+        private InvocationModel CreateInvokeModel(IMethodSymbol calleeSymbol, 
+            ExpressionSyntax invocationSyntax,
+            IMethodSymbol callerSymbol)
         {
-            return invocationInfo.Locations.Select(invokationlocation => new InvocationModel
+            return new InvocationModel
             {
-                MethodId = invocationInfo.CallingSymbol.ToString(), 
-                LineNumber = invokationlocation.GetLineSpan().StartLinePosition.Line + 1,
-                TypeArguments = AnalyzeTypeArguments(invocationInfo, invokationlocation)
-            }).ToList();
+                MethodId = calleeSymbol.ToString(),
+                LineNumber = invocationSyntax.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
+                TypeArguments = AnalyzeTypeArguments(calleeSymbol, callerSymbol)
+            };
         }
 
-        private List<string> AnalyzeTypeArguments(SymbolCallerInfo invocationInfo, Location invocationLocation)
+        private List<string> AnalyzeTypeArguments(IMethodSymbol calleeSymbol, IMethodSymbol callerSymbol)
         {
-            var invocationSyntax = LookupInvocationSyntaxInSourceCode(invocationInfo, invocationLocation);
-            if (invocationSyntax == null)  return []; //Source likely generated (e.g. Property Accessor)
-            
-            var semanticModel = Analyzer.FindSemanticModelForFileContainingSyntaxNode(invocationSyntax);
-            var invocationSymbol = (IMethodSymbol)semanticModel.GetSymbolInfo(invocationSyntax).Symbol;
+            var allTypesPerTypeArgument = calleeSymbol.TypeArguments.Select(typeArg =>
+                typeArg.FindAllTypes(callerSymbol.FindTypeArguments()));
 
-            var allTypesPerTypeArgument = invocationSymbol?.TypeArguments.Select(symbol =>
-                symbol.FindAllTypes(invocationInfo.CallingSymbol.FindTypeArguments())) ?? [];
-
-            return allTypesPerTypeArgument.SelectMany(x=>x).ToList();
+            return allTypesPerTypeArgument.SelectMany(x => x).ToList();
         }
-
-        private static InvocationExpressionSyntax LookupInvocationSyntaxInSourceCode(SymbolCallerInfo invocationInfo, Location invocationLocation)
+        
+        private void ProcessObjectCreationNodes(SyntaxNode scopeSyntax,
+            MethodModel methodModel,
+            IMethodSymbol callerSymbol,
+            SemanticModel semanticModel)
         {
-            var locationOfCallingMethod = FindLocationOfCallingMethod(invocationInfo);
-            var invocationExpression = FindListOfInvocationsInCallingMethod(invocationLocation, locationOfCallingMethod);
-
-            var invocationSyntaxes = invocationExpression.Where(invocation => invocation
-                .DescendantTokens()
-                .Any(token => token.FullSpan.Equals(invocationLocation.SourceSpan))
-            ).ToList();
-
-            if (invocationSyntaxes.Count == 0) return null;
-            
-            //In case of nested Invocations, all are contained in List "invocationSyntaxes" --> take innermost invocation
-            var minimumLengthSyntax = invocationSyntaxes.Min(syntax => syntax.FullSpan.Length);
-            return invocationSyntaxes.First(syntax => syntax.FullSpan.Length == minimumLengthSyntax);
-        }
-
-        private static TextSpan FindLocationOfCallingMethod(SymbolCallerInfo caller)
-        {
-            //Even for partial methods there is only one location
-            //which corresponds to the implementation of the method
-            return caller.CallingSymbol.Locations[0].SourceSpan;
-        }
-
-        private static List<InvocationExpressionSyntax> FindListOfInvocationsInCallingMethod(Location invocationLocation, TextSpan locationOfCallingMethod)
-        {
-            if (invocationLocation.SourceTree == null) return [];
-
-            return invocationLocation.SourceTree
-                .GetRoot()
-                .FindNode(locationOfCallingMethod)
+            // Handles: new Foo(), new Foo(args), new Foo { ... }
+            var explicitCreations = scopeSyntax
                 .DescendantNodes()
-                .OfType<InvocationExpressionSyntax>()
-                .ToList();
+                .OfType<ObjectCreationExpressionSyntax>();
+
+            foreach (var creation in explicitCreations)
+            {
+                var symbolInfo = semanticModel.GetSymbolInfo(creation);
+                var calleeSymbol = (symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault())
+                    as IMethodSymbol;
+                if (calleeSymbol == null) continue;
+                methodModel.Invokes.Add(CreateInvokeModel(calleeSymbol, creation, callerSymbol));
+            }
+
+            // Handles: new() — implicit object creation (target-typed new)
+            var implicitCreations = scopeSyntax
+                .DescendantNodes()
+                .OfType<ImplicitObjectCreationExpressionSyntax>();
+
+            foreach (var creation in implicitCreations)
+            {
+                var symbolInfo = semanticModel.GetSymbolInfo(creation);
+                var calleeSymbol = (symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault())
+                    as IMethodSymbol;
+                if (calleeSymbol == null) continue;
+                methodModel.Invokes.Add(CreateInvokeModel(calleeSymbol, creation, callerSymbol));
+            }
         }
 
         public void ProcessArrayCreations(MethodDeclarationSyntax methodDeclarationSyntax, MethodModel methodModel)
