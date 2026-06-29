@@ -51,7 +51,7 @@ namespace csharp_to_json_converter.utils.analyzers
         {
             foreach (var invocation in invocations)
             {
-                var symbolInfo = ModelExtensions.GetSymbolInfo(semanticModel, invocation);
+                var symbolInfo = semanticModel.GetSymbolInfo(invocation);
                 var calleeSymbol = (symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault())
                     as IMethodSymbol;
 
@@ -65,14 +65,24 @@ namespace csharp_to_json_converter.utils.analyzers
             SyntaxNode syntaxNode,
             IMethodSymbol callerSymbol)
         {
+            // Keep substituted symbol for type argument analysis
+            var substitutedSymbol = calleeSymbol;
+
+            // Normalize MethodId to match declaration FQN:
+            // - Extension methods: keep reduced form (TypeClass.Method(double))
+            //   since that's what the declaration side also stores via GetFqn()
+            // - Generic methods: strip type substitution to get back to <T> form
+            var methodIdSymbol = calleeSymbol;
+            if (methodIdSymbol.IsGenericMethod && !methodIdSymbol.TypeArguments.IsEmpty)
+                methodIdSymbol = methodIdSymbol.OriginalDefinition;
+
             return new InvocationModel
             {
-                MethodId = calleeSymbol.ToString(),
+                MethodId = methodIdSymbol.ToString(),
                 LineNumber = syntaxNode.GetLocation().GetLineSpan().StartLinePosition.Line + 1,
-                TypeArguments = AnalyzeTypeArguments(calleeSymbol, callerSymbol)
+                TypeArguments = AnalyzeTypeArguments(substitutedSymbol, callerSymbol)
             };
         }
-
         // Existing one now delegates to the above
         private InvocationModel CreateInvokeModel(IMethodSymbol calleeSymbol,
             ExpressionSyntax expressionSyntax,
